@@ -8,7 +8,7 @@
 </head>
 <body>
   <div class="app">
-    <aside class="sidebar">
+    <aside class="sidebar" id="sidebar">
       <div class="logo">
         <span>Shani</span> GPT
       </div>
@@ -24,9 +24,11 @@
         {% endfor %}
       </div>
     </aside>
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
 
     <main class="main">
       <header>
+        <button class="mobile-menu-toggle" id="menu-toggle" type="button" aria-label="Open sidebar" aria-controls="sidebar">☰</button>
         <h1>Shani GPT</h1>
       </header>
 

@@ -1,3 +1,149 @@
-@media(max-width:900px){
+/* ================= RESPONSIVE ================= */
 
+@media (min-width: 1200px) {
+  .sidebar {
+    width: 300px;
+    min-width: 300px;
+  }
+
+  .chat-area {
+    padding: 28px 40px 36px;
+  }
+}
+
+@media (max-width: 1199px) and (min-width: 992px) {
+  .sidebar {
+    width: 270px;
+    min-width: 270px;
+  }
+
+  .chat-area {
+    padding: 24px 30px 32px;
+  }
+}
+
+@media (max-width: 991px) {
+  body {
+    overflow: hidden;
+  }
+
+  .app {
+    position: relative;
+  }
+
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    transform: translateX(-100%);
+    z-index: 30;
+    box-shadow: none;
+  }
+
+  .sidebar.open {
+    transform: translateX(0);
+    box-shadow: 0 0 0 9999px rgba(2, 6, 23, 0.45);
+  }
+
+  .mobile-menu-toggle {
+    display: inline-flex;
+  }
+
+  .main {
+    width: 100%;
+  }
+
+  .chat-area {
+    padding: 18px 18px 24px;
+  }
+
+  .user-message,
+  .ai-message {
+    max-width: min(88%, 720px);
+  }
+}
+
+@media (max-width: 767px) {
+  header {
+    padding: 0 16px;
+    height: 68px;
+  }
+
+  header h1 {
+    font-size: 22px;
+  }
+
+  form {
+    padding: 12px 14px 16px;
+    gap: 10px;
+  }
+
+  textarea {
+    padding: 12px 14px;
+    font-size: 15px;
+    border-radius: 14px;
+  }
+
+  button {
+    width: 48px;
+    height: 48px;
+    min-width: 48px;
+  }
+
+  .chat-area {
+    padding: 14px 14px 20px;
+    gap: 12px;
+  }
+
+  .welcome h2 {
+    font-size: 26px;
+  }
+
+  .welcome p {
+    font-size: 15px;
+  }
+}
+
+@media (max-width: 479px) {
+  .sidebar {
+    width: 84vw;
+    min-width: 84vw;
+  }
+
+  header {
+    padding: 0 12px;
+  }
+
+  form {
+    padding: 10px 12px 12px;
+  }
+
+  .chat-area {
+    padding: 12px 12px 16px;
+  }
+
+  .user-message,
+  .ai-message {
+    max-width: 100%;
+    padding: 12px 13px;
+    border-radius: 16px;
+  }
+}
+
+@media (max-width: 319px) {
+  .sidebar {
+    width: 90vw;
+    min-width: 90vw;
+  }
+
+  header h1 {
+    font-size: 20px;
+  }
+
+  .mobile-menu-toggle {
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+  }
 }

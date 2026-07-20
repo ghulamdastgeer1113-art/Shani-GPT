@@ -5,6 +5,9 @@ const chatWindow = document.getElementById("chat-window");
 const messageForm = document.getElementById("message-form");
 const messageInput = document.getElementById("message-input");
 const newChatButton = document.getElementById("new-chat-btn");
+const sidebar = document.getElementById("sidebar");
+const sidebarOverlay = document.getElementById("sidebar-overlay");
+const menuToggle = document.getElementById("menu-toggle");
 
 let isSending = false;
 
@@ -105,6 +108,14 @@ function loadChat(chatId) {
     });
 }
 
+function toggleSidebar(force) {
+  if (!sidebar) return;
+  const shouldOpen = typeof force === "boolean" ? force : !sidebar.classList.contains("open");
+  sidebar.classList.toggle("open", shouldOpen);
+  sidebarOverlay?.classList.toggle("active", shouldOpen);
+  document.body.classList.toggle("drawer-open", shouldOpen);
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   autoResizeTextarea();
 
@@ -112,7 +123,19 @@ document.addEventListener("DOMContentLoaded", () => {
     item.addEventListener("click", () => {
       const chatId = item.dataset.chatId;
       if (chatId) loadChat(chatId);
+      toggleSidebar(false);
     });
+  });
+
+  menuToggle?.addEventListener("click", () => toggleSidebar());
+  sidebarOverlay?.addEventListener("click", () => toggleSidebar(false));
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") toggleSidebar(false);
+  });
+
+  window.addEventListener("resize", () => {
+    if (window.innerWidth > 991) toggleSidebar(false);
   });
 
   newChatButton?.addEventListener("click", async () => {
