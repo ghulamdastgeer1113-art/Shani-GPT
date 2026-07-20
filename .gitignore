@@ -1,3 +1,4 @@
 .env
 chat.db
 __pycache__
+uploads
