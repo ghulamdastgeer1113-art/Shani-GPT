@@ -1,0 +1,249 @@
+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
+Year 1:
+→ Learn programming (Python + Web Development)
+3310204521330
+Python Fundamentals (Months 1–3)
+🎯 Goal:
+
+Be comfortable writing real programs without copying blindly.
+
+Month 1: Basics
+
+Learn:
+
+Variables
+
+Data types
+
+Loops
+
+Conditions
+
+Functions
+
+Lists, dictionaries
+
+Practice daily on:
+
+Small exercises
+
+Simple logic problems
+
+Don’t rush.
+
+Month 2: Intermediate Python
+
+Learn:
+
+File handling
+
+Error handling
+
+Modules
+
+OOP (classes & objects)
+
+Start building mini projects:
+
+Calculator
+
+Password generator
+
+To-do app (terminal)
+
+Simple quiz game
+
+Month 3: Real-World Python
+
+Learn:
+
+Virtual environments
+
+Using APIs
+
+Basic automation scripts
+
+Build:
+
+File organizer script
+
+Simple web scraper
+
+Automation tool
+
+At this stage, you should feel confident coding alone.
+
+Phase 2: Web Development Basics (Months 4–6)
+
+Now we add the web layer.
+
+Month 4: Frontend Basics
+
+Learn:
+
+HTML
+
+CSS
+
+Basic responsive design
+
+Build:
+
+Personal portfolio website
+
+Simple landing page
+
+Basic blog layout
+
+No fancy frameworks yet.
+
+Month 5: JavaScript Basics
+
+Learn:
+
+Variables
+
+DOM manipulation
+
+Events
+
+Basic fetch requests
+
+Build:
+
+Interactive to-do list
+
+Weather app using API
+
+Form validation
+
+Month 6: Backend with Python
+
+Now combine everything.
+
+Learn:
+
+Flask or Django
+
+REST APIs
+
+Basic authentication
+
+Connecting database
+
+Learn basic SQL (you asked about SQL earlier — good sign).
+
+Build:
+
+Blog website
+
+Login/Register system
+
+Small e-commerce demo
+
+Now you are officially a junior-level developer in training.
+
+Phase 3: Make It Professional (Months 7–9)
+
+Now we upgrade you.
+
+Learn:
+
+Git & GitHub
+
+Deployment
+
+Hosting
+
+Deploy on:
+
+Vercel
+
+Render
+
+Build 2–3 strong portfolio projects:
+
+Task management app
+
+Job board
+
+API-based service
+
+Make them look professional.
+
+Phase 4: Start Earning (Months 10–12)
+
+Now you focus on income.
+
+Options:
+
+Option 1: Freelancing
+
+Use:
+
+Fiverr
+
+Upwork
+
+Start with small gigs:
+
+Fix website bugs
+
+Convert design to HTML
+
+Build simple landing pages
+
+Option 2: Internship
+
+Apply locally in Pakistan:
+
+Software houses
+
+Startups
+
+Remote internships
+
+Even unpaid internship for 2–3 months can boost your career massively.
+
+Daily Study Structure (Very Important)
+
+If you’re serious:
+
+2–3 hours daily coding
+
+30 minutes theory
+
+30 minutes revision
+
+Build something every week
+
+Consistency > intelligence.
+
+Mistakes You Must Avoid
+
+❌ Watching tutorials without coding
+❌ Jumping between technologies
+❌ Learning 5 languages at once
+❌ Comparing yourself to others
+
+Stay focused.
+
+After 1 Year
+
+You can:
+
+Work as junior web developer
+
+Freelance
+
+Move into backend specialization
+
+Transition into AI, DevOps, or Security later
+
+Programming is a master key.
+
+Year 2:
+→ Move into Cloud or Backend Development
+
+After that:
+→ Specialize (AI, Security, DevOps)

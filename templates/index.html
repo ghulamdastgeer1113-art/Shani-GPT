@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Shani GPT</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="logo">
+        <span>Shani</span> GPT
+      </div>
+
+      <button id="new-chat-btn" class="new-chat">New Chat</button>
+
+      <div class="history-title">History</div>
+      <div class="history" id="chat-list">
+        {% for chat in chats %}
+        <div class="history-item {{ 'active' if chat.id == current_chat else '' }}" data-chat-id="{{ chat.id }}">
+          {{ chat.title }}
+        </div>
+        {% endfor %}
+      </div>
+    </aside>
+
+    <main class="main">
+      <header>
+        <h1>Shani GPT</h1>
+      </header>
+
+      <section class="chat-area" id="chat-window">
+        {% if messages %}
+          {% for message in messages %}
+            {% if message.role == 'user' %}
+            <div class="user-container">
+              <div class="user-message">{{ message.content | e }}</div>
+            </div>
+            {% else %}
+            <div class="ai-container">
+              <div class="ai-message">{{ message.content | e }}</div>
+            </div>
+            {% endif %}
+          {% endfor %}
+        {% else %}
+        <div class="welcome">
+          <h2>Welcome to Shani GPT</h2>
+          <p>Start a new conversation by asking a question.</p>
+        </div>
+        {% endif %}
+      </section>
+
+      <form id="message-form">
+        <textarea id="message-input" placeholder="Ask anything..." autocomplete="off"></textarea>
+        <button type="submit">➤</button>
+      </form>
+    </main>
+  </div>
+
+  <script src="{{ url_for('static', filename='js/chat.js') }}"></script>
+</body>
+</html>
