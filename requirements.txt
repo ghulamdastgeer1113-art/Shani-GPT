@@ -4,5 +4,5 @@ python-dotenv==1.2.2
 python-docx==1.1.2
 pdfplumber==0.10.1
 Pillow==11.0.0
-pytesseract==0.3.11
+pytesseract==0.3.13
 pytest==7.4.0
