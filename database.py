@@ -5,10 +5,12 @@ DATABASE_PATH = os.path.join(os.path.dirname(__file__), "chat.db")
 
 
 def get_connection():
+    """Return a SQLite connection for the project database."""
     return sqlite3.connect(DATABASE_PATH)
 
 
 def initialize_database():
+    """Create the persistent tables for chats, messages, and uploads."""
     connection = get_connection()
     cursor = connection.cursor()
 
@@ -49,6 +51,7 @@ def initialize_database():
 
 
 def save_message(chat_id, role, content):
+    """Save a single role/content pair for the active chat."""
     connection = get_connection()
     cursor = connection.cursor()
     cursor.execute(
@@ -60,6 +63,7 @@ def save_message(chat_id, role, content):
 
 
 def load_chat(chat_id):
+    """Load the conversation history for a specific chat."""
     connection = get_connection()
     cursor = connection.cursor()
     cursor.execute(
@@ -72,6 +76,7 @@ def load_chat(chat_id):
 
 
 def create_chat(title="New Chat"):
+    """Create a new chat row and return its identifier."""
     connection = get_connection()
     cursor = connection.cursor()
     cursor.execute("INSERT INTO chats(title) VALUES(?)", (title,))
@@ -82,6 +87,7 @@ def create_chat(title="New Chat"):
 
 
 def get_all_chats():
+    """Return all saved chat records ordered by most recent."""
     connection = get_connection()
     cursor = connection.cursor()
     cursor.execute("SELECT id, title FROM chats ORDER BY id DESC")
@@ -137,6 +143,7 @@ def search_chats(query):
 
 
 def save_file_metadata(chat_id, filename, filepath, file_type, extracted_text):
+    """Record metadata for uploaded files and OCR/document text extracts."""
     connection = get_connection()
     cursor = connection.cursor()
     cursor.execute(

@@ -19,7 +19,7 @@
       <div class="history-title">History</div>
       <div class="history" id="chat-list">
         {% for chat in chats %}
-        <div class="history-item {{ 'active' if chat.id == current_chat else '' }}" data-chat-id="{{ chat.id }}">
+        <div class="history-item {{ 'active' if chat.id == current_chat else '' }}" data-chat-id="{{ chat.id }}" role="button" tabindex="0" aria-pressed="false">
           {{ chat.title }}
         </div>
         {% endfor %}
@@ -33,7 +33,7 @@
         <h1>Shani GPT</h1>
       </header>
 
-      <section class="chat-area" id="chat-window">
+      <section class="chat-area" id="chat-window" role="log" aria-live="polite" aria-label="Chat messages">
         {% if messages %}
           {% for message in messages %}
             {% if message.role == 'user' %}
@@ -54,9 +54,10 @@
         {% endif %}
       </section>
 
-      <form id="message-form">
+      <form id="message-form" novalidate>
+        <label for="message-input" class="sr-only">Type your message</label>
         <textarea id="message-input" placeholder="Ask anything..." autocomplete="off"></textarea>
-        <button type="submit">➤</button>
+        <button type="submit" aria-label="Send message">➤</button>
       </form>
     </main>
   </div>

@@ -113,6 +113,7 @@ function toggleSidebar(force) {
   const shouldOpen = typeof force === "boolean" ? force : !sidebar.classList.contains("open");
   sidebar.classList.toggle("open", shouldOpen);
   sidebarOverlay?.classList.toggle("active", shouldOpen);
+  menuToggle?.setAttribute("aria-expanded", shouldOpen.toString());
   document.body.classList.toggle("drawer-open", shouldOpen);
 }
 
@@ -124,6 +125,15 @@ document.addEventListener("DOMContentLoaded", () => {
       const chatId = item.dataset.chatId;
       if (chatId) loadChat(chatId);
       toggleSidebar(false);
+    });
+
+    item.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        const chatId = item.dataset.chatId;
+        if (chatId) loadChat(chatId);
+        toggleSidebar(false);
+      }
     });
   });
 
@@ -137,6 +147,8 @@ document.addEventListener("DOMContentLoaded", () => {
   window.addEventListener("resize", () => {
     if (window.innerWidth > 991) toggleSidebar(false);
   });
+
+  messageInput?.focus();
 
   newChatButton?.addEventListener("click", async () => {
     const response = await fetch("/new_chat", { method: "POST" });

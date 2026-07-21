@@ -1,11 +1,7 @@
 from flask import Flask, render_template, request, jsonify, Response, stream_with_context
 from openai import OpenAI
-from werkzeug.utils import secure_filename
 from dotenv import load_dotenv
 import os
-import uuid
-from urllib.parse import quote
-import re
 
 from database import (
     initialize_database,
@@ -17,59 +13,19 @@ from database import (
     update_chat_title,
     delete_chat,
     search_chats,
-    save_file_metadata
+    save_file_metadata,
 )
-
-IMAGE_KEYWORDS = [
-    "generate",
-    "create",
-    "draw",
-    "paint",
-    "illustrate",
-    "design",
-    "image",
-    "picture",
-]
-
-STOP_WORDS = [
-    "an",
-    "a",
-    "the",
-    "of",
-    "for",
-    "please",
-    "with",
-    "in",
-    "on",
-    "to",
-    "and",
-    "me",
-]
-
-def is_image_prompt(text: str) -> bool:
-    if not text:
-        return False
-    lower = text.lower()
-    return any(keyword in lower for keyword in IMAGE_KEYWORDS)
-
-def clean_image_prompt(text: str) -> str:
-    lower = text.lower()
-    lower = re.sub(r"[^a-z0-9\s]", " ", lower)
-    lower = re.sub(
-        r"\b(" + r"|".join(re.escape(k) for k in IMAGE_KEYWORDS) + r")\b",
-        "",
-        lower,
-    )
-    lower = re.sub(
-        r"\b(" + r"|".join(re.escape(k) for k in STOP_WORDS) + r")\b",
-        "",
-        lower,
-    )
-    prompt = " ".join(lower.split()).strip()
-    return prompt or text.strip()
-
-def build_pollinations_url(prompt: str) -> str:
-    return f"https://image.pollinations.ai/prompt/{quote(prompt)}"
+from utils import (
+    ALLOWED_FILE_EXTENSIONS,
+    ALLOWED_IMAGE_EXTENSIONS,
+    allowed_file,
+    build_pollinations_url,
+    clean_image_prompt,
+    extract_text_from_file,
+    extract_text_from_image,
+    is_image_prompt,
+    make_unique_filename,
+)
 
 def save_generated_image(chat_id: int, prompt: str, image_url: str):
     """
@@ -82,6 +38,7 @@ def save_generated_image(chat_id: int, prompt: str, image_url: str):
 load_dotenv()
 
 app = Flask(__name__)
+app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024  # Limit uploads to 16MB
 initialize_database()
 
 UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), "uploads")
@@ -98,48 +55,23 @@ else:
     current_chat = create_chat(title="Shani GPT")
     chat_history = []
 
+openrouter_api_key = os.getenv("OPENROUTER_API_KEY")
+if not openrouter_api_key:
+    raise RuntimeError(
+        "OPENROUTER_API_KEY is required. Copy .env.example to .env and set the key."
+    )
+
 client = OpenAI(
-    api_key=os.getenv("OPENROUTER_API_KEY"),
-    base_url="https://openrouter.ai/api/v1"
+    api_key=openrouter_api_key,
+    base_url="https://openrouter.ai/api/v1",
 )
 
 
-def allowed_file(filename, allowed_ext):
-    return "." in filename and filename.rsplit(".", 1)[1].lower() in allowed_ext
-
-
-def extract_text_from_file(filepath, filename):
-    ext = filename.rsplit(".", 1)[1].lower()
-    try:
-        if ext in {"txt", "csv"}:
-            with open(filepath, "r", encoding="utf-8", errors="ignore") as f:
-                return f.read()
-        if ext == "docx":
-            import docx
-            doc = docx.Document(filepath)
-            return "\n".join([p.text for p in doc.paragraphs])
-        if ext == "pdf":
-            import pdfplumber
-            with pdfplumber.open(filepath) as pdf:
-                return "\n\n".join(page.extract_text() or "" for page in pdf.pages)
-    except Exception:
-        return None
-    return None
-
-
-def extract_text_from_image(filepath):
-    try:
-        from PIL import Image
-        import pytesseract
-        image = Image.open(filepath)
-        return pytesseract.image_to_string(image)
-    except Exception:
-        return None
-
-
 def generate_chat_title(messages):
+    """Generate a short chat title from the conversation history."""
     if not messages:
         return None
+
     prompt_messages = messages[:6]
     system_prompt = (
         "Create a short descriptive title for this conversation. "
@@ -152,8 +84,8 @@ def generate_chat_title(messages):
         model="openrouter/free",
         messages=[
             {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt}
-        ]
+            {"role": "user", "content": user_prompt},
+        ],
     )
     title = response.choices[0].message.content.strip()
     return title[:60]
@@ -186,7 +118,7 @@ def chat():
 
     response = client.chat.completions.create(
         model="openrouter/free",
-        messages=chat_history
+        messages=chat_history,
     )
 
     reply = response.choices[0].message.content
@@ -311,11 +243,14 @@ def upload_file():
     global chat_history
 
     file = request.files.get("file")
-    if not file or not allowed_file(file.filename, ALLOWED_FILE_EXTENSIONS):
+    if not file or not file.filename:
+        return jsonify({"error": "A valid file is required"}), 400
+
+    if not allowed_file(file.filename, ALLOWED_FILE_EXTENSIONS):
         return jsonify({"error": "File type not supported"}), 400
 
-    filename = secure_filename(file.filename)
-    unique_name = f"{uuid.uuid4().hex}_{filename}"
+    filename = file.filename
+    unique_name = make_unique_filename(filename)
     filepath = os.path.join(UPLOAD_FOLDER, unique_name)
     file.save(filepath)
 
@@ -340,11 +275,14 @@ def upload_image():
     global chat_history
 
     image = request.files.get("image")
-    if not image or not allowed_file(image.filename, ALLOWED_IMAGE_EXTENSIONS):
+    if not image or not image.filename:
+        return jsonify({"error": "A valid image is required"}), 400
+
+    if not allowed_file(image.filename, ALLOWED_IMAGE_EXTENSIONS):
         return jsonify({"error": "Image type not supported"}), 400
 
-    filename = secure_filename(image.filename)
-    unique_name = f"{uuid.uuid4().hex}_{filename}"
+    filename = image.filename
+    unique_name = make_unique_filename(filename)
     filepath = os.path.join(UPLOAD_FOLDER, unique_name)
     image.save(filepath)
 

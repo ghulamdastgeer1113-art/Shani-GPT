@@ -1,4 +1,9 @@
 .env
 chat.db
-__pycache__
-uploads
+uploads/
+__pycache__/
+*.pyc
+instance/
+.vscode/
+.idea/
+.DS_Store
