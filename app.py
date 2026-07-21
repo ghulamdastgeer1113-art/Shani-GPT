@@ -56,7 +56,7 @@ else:
     chat_history = []
 
 openrouter_api_key = os.getenv("OPENROUTER_API_KEY", "").strip()
-if not openrouter_api_key or openrouter_api_key.startswith("${{"):
+if not openrouter_api_key or "${{" in openrouter_api_key or "}}" in openrouter_api_key:
     raise RuntimeError(
         "OPENROUTER_API_KEY is required. Set the actual OpenRouter key in the deployment environment."
     )
@@ -93,7 +93,14 @@ def generate_chat_title(messages):
 
 @app.route("/")
 def index():
-    return "Shani GPT is running!"
+    chats = get_all_chats()
+    return render_template(
+        "index.html",
+        messages=chat_history,
+        chats=chats,
+        current_chat=current_chat,
+        chat_title=get_chat_title(current_chat) or "Shani GPT"
+    )
 
 @app.route("/chat", methods=["POST"])
 def chat():
