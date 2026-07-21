@@ -84,13 +84,15 @@ python app.py
 
 ## Deployment
 
-The app is configured for lightweight deployment platforms such as Railway. The `Procfile` uses `python app.py`, and the project includes `.env.example` and `.gitignore` for best practices.
+The app is configured for lightweight deployment platforms such as Railway. The `Procfile` starts Waitress with `app:app`, and the project includes `.env.example` and `.gitignore` for best practices.
+
+Before deploying, add `OPENROUTER_API_KEY` as a secret/environment variable in the hosting provider. Its value must be the actual key, not a template such as `${{shared.OPENROUTER_API_KEY}}` unless the provider has a shared variable with that exact name configured. Do not commit `.env` or paste the key into source code.
 
 ## Railway deployment
 
 1. Add the repository to Railway.
-2. Configure the environment variable `OPENROUTER_API_KEY`.
-3. Set the start command to `python app.py` if needed.
+2. Configure the secret `OPENROUTER_API_KEY` with the newly generated key.
+3. Use the `Procfile` start command, or set the start command to `waitress-serve --listen=0.0.0.0:$PORT app:app`.
 4. Deploy.
 
 ## GitHub setup

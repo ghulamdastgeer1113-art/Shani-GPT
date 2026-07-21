@@ -55,10 +55,10 @@ else:
     current_chat = create_chat(title="Shani GPT")
     chat_history = []
 
-openrouter_api_key = os.getenv("OPENROUTER_API_KEY")
-if not openrouter_api_key:
+openrouter_api_key = os.getenv("OPENROUTER_API_KEY", "").strip()
+if not openrouter_api_key or openrouter_api_key.startswith("${{"):
     raise RuntimeError(
-        "OPENROUTER_API_KEY is required. Copy .env.example to .env and set the key."
+        "OPENROUTER_API_KEY is required. Set the actual OpenRouter key in the deployment environment."
     )
 
 client = OpenAI(
