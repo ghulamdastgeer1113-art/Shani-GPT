@@ -93,15 +93,7 @@ def generate_chat_title(messages):
 
 @app.route("/")
 def index():
-    chats = get_all_chats()
-    return render_template(
-        "index.html",
-        messages=chat_history,
-        chats=chats,
-        current_chat=current_chat,
-        chat_title=get_chat_title(current_chat) or "Shani GPT"
-    )
-
+    return "Shani GPT is running!"
 
 @app.route("/chat", methods=["POST"])
 def chat():
