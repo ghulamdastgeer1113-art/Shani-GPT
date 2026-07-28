@@ -1,109 +1,48 @@
-/* ================= RESPONSIVE ================= */
+/* ===========================
+   SHANI GPT - RESPONSIVE STYLES
+   Mobile & Tablet Optimizations
+   =========================== */
 
-@media (min-width: 1200px) {
-  .sidebar {
-    width: 300px;
-    min-width: 300px;
-  }
-
-  .chat-area {
-    padding: 28px 40px 36px;
-  }
-}
-
-@media (max-width: 1199px) and (min-width: 992px) {
-  .sidebar {
-    width: 270px;
-    min-width: 270px;
-  }
-
-  .chat-area {
-    padding: 24px 30px 32px;
-  }
-}
-
-@media (max-width: 991px) {
-  body {
-    overflow: hidden;
-  }
-
-  .app {
-    position: relative;
-  }
-
+/* Tablet and below */
+@media (max-width: 1024px) {
   .sidebar {
     position: fixed;
-    top: 0;
     left: 0;
-    width: min(320px, 80vw);
-    min-width: 0;
-    max-width: 320px;
-    height: 100dvh;
+    top: 0;
+    bottom: 0;
     transform: translateX(-100%);
-    z-index: 30;
+    z-index: 20;
     box-shadow: none;
   }
 
   .sidebar.open {
     transform: translateX(0);
-    box-shadow: 0 0 0 9999px rgba(2, 6, 23, 0.45);
+    box-shadow: 8px 0 40px rgba(0, 0, 0, 0.4);
   }
 
   .mobile-menu-toggle {
-    display: inline-flex;
+    display: flex;
   }
 
-  .main {
-    width: 100%;
-    max-width: 100%;
-  }
-
-  .chat-area {
-    padding: 16px 14px 22px;
-  }
-
-  .user-message,
-  .ai-message {
-    max-width: 100%;
-    font-size: 15px;
-  }
-
-  .history-item {
-    padding: 11px 12px;
-    white-space: normal;
-    word-break: break-word;
+  .sidebar-overlay.active {
+    opacity: 1;
+    pointer-events: auto;
   }
 }
 
-@media (max-width: 767px) {
+/* Mobile */
+@media (max-width: 768px) {
   header {
-    padding: 0 14px;
-    height: 64px;
+    height: 60px;
+    padding: 0 16px;
   }
 
   header h1 {
     font-size: 20px;
   }
 
-  form {
-    padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
-    gap: 8px;
-  }
-
-  textarea {
-    padding: 12px 13px;
-    font-size: 15px;
-    border-radius: 14px;
-  }
-
-  button {
-    width: 48px;
-    height: 48px;
-    min-width: 48px;
-  }
-
   .chat-area {
-    padding: 12px 12px 18px;
+    padding: 16px 14px;
     gap: 12px;
   }
 
@@ -114,48 +53,115 @@
   .welcome p {
     font-size: 15px;
   }
-}
-
-@media (max-width: 479px) {
-  .sidebar {
-    width: min(320px, 80vw);
-    min-width: 0;
-  }
-
-  header {
-    padding: 0 10px;
-  }
 
   form {
-    padding: 10px 10px calc(10px + env(safe-area-inset-bottom));
+    padding: 12px 14px;
+    gap: 10px;
+  }
+
+  textarea {
+    padding: 12px 14px;
+    font-size: 15px;
+    min-height: 44px;
+    max-height: 140px;
+  }
+
+  button[type="submit"] {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+  }
+
+  .message {
+    gap: 8px;
+  }
+
+  .message-content {
+    max-width: 90%;
+    padding: 10px 14px;
+    font-size: 14px;
+  }
+
+  .message-avatar {
+    width: 30px;
+    height: 30px;
+    min-width: 30px;
+    font-size: 13px;
+  }
+
+  .copy-response-btn {
+    top: 4px;
+    right: 4px;
+    padding: 3px 8px;
+    font-size: 11px;
+  }
+}
+
+/* Small mobile */
+@media (max-width: 480px) {
+  .sidebar {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .message-content {
+    max-width: 95%;
+    font-size: 14px;
   }
 
   .chat-area {
-    padding: 10px 10px 14px;
+    padding: 12px 10px;
   }
 
-  .user-message,
-  .ai-message {
-    max-width: 100%;
-    padding: 12px 13px;
-    border-radius: 16px;
-    font-size: 15px;
+  form {
+    padding: 10px 10px;
+  }
+
+  .logo {
+    font-size: 24px;
+    padding: 20px 20px 14px;
+  }
+
+  .new-chat {
+    width: 180px;
+    height: 40px;
+    font-size: 14px;
+  }
+
+  .history-item {
+    padding: 10px 12px;
+    font-size: 13px;
   }
 }
 
-@media (max-width: 319px) {
-  .sidebar {
-    width: 80vw;
-    min-width: 0;
+/* Landscape mobile */
+@media (max-height: 500px) {
+  header {
+    height: 48px;
+    padding: 0 12px;
   }
 
   header h1 {
-    font-size: 20px;
+    font-size: 18px;
   }
 
-  .mobile-menu-toggle {
-    width: 40px;
-    height: 40px;
-    min-width: 40px;
+  .chat-area {
+    padding: 10px 12px;
+  }
+
+  form {
+    padding: 8px 12px;
+  }
+
+  textarea {
+    min-height: 38px;
+    max-height: 100px;
+    font-size: 14px;
+  }
+
+  button[type="submit"] {
+    width: 38px;
+    height: 38px;
+    min-width: 38px;
   }
 }

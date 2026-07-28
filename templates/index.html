@@ -6,7 +6,10 @@
   <title>Shani GPT</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
   <link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/markdown.css') }}" />
   <link rel="stylesheet" href="{{ url_for('static', filename='css/responsive.css') }}" />
+  <!-- Highlight.js for code syntax highlighting -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css" />
 </head>
 <body>
   <div class="app">
@@ -15,7 +18,7 @@
         <span>Shani</span> GPT
       </div>
 
-      <button id="new-chat-btn" class="new-chat">New Chat</button>
+      <button id="new-chat-btn" class="new-chat">+ New Chat</button>
 
       {% if user %}
       <div class="user-badge">
@@ -49,12 +52,15 @@
         {% if messages %}
           {% for message in messages %}
             {% if message.role == 'user' %}
-            <div class="user-container">
-              <div class="user-message">{{ message.content | e }}</div>
+            <div class="message user-message-wrapper">
+              <div class="message-content user-content">{{ message.content | e }}</div>
             </div>
             {% else %}
-            <div class="ai-container">
-              <div class="ai-message">{{ message.content | e }}</div>
+            <div class="message ai-message-wrapper">
+              <div class="message-avatar">S</div>
+              <div class="message-content ai-content">
+                <div class="markdown-body" data-raw-content="{{ message.content | e }}"></div>
+              </div>
             </div>
             {% endif %}
           {% endfor %}
@@ -68,12 +74,20 @@
 
       <form id="message-form" novalidate>
         <label for="message-input" class="sr-only">Type your message</label>
-        <textarea id="message-input" placeholder="Ask anything..." autocomplete="off"></textarea>
-        <button type="submit" aria-label="Send message">➤</button>
+        <textarea id="message-input" placeholder="Ask anything..." autocomplete="off" rows="1"></textarea>
+        <button type="submit" id="send-button" aria-label="Send message">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="22" y1="2" x2="11" y2="13"></line>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+          </svg>
+        </button>
       </form>
     </main>
   </div>
 
-  <script src="{{ url_for('static', filename='js/chat.js') }}"></script>
+  <!-- Libraries -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.1/marked.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="{{ url_for('static', filename='js/script.js') }}"></script>
 </body>
 </html>

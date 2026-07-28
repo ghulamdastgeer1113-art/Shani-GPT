@@ -1,12 +1,13 @@
 /* ===========================
-   SHANI GPT UI ENHANCEMENTS
-=========================== */
+   SHANI GPT - MAIN STYLES
+   Professional AI Chat Interface
+   =========================== */
 
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-  font-family: "Segoe UI", Arial, sans-serif;
+  font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, Arial, sans-serif;
 }
 
 html,
@@ -101,7 +102,6 @@ body {
   transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
   box-shadow: 0 10px 22px rgba(37, 99, 235, 0.22);
 }
-
 
 .new-chat:hover,
 .new-chat:focus-visible {
@@ -223,7 +223,7 @@ header h1 {
   transform: translateY(-1px);
 }
 
-/* ================= CHAT ================= */
+/* ================= CHAT AREA ================= */
 
 .chat-area {
   flex: 1;
@@ -231,7 +231,7 @@ header h1 {
   padding: 24px 28px calc(24px + env(safe-area-inset-bottom));
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 8px;
   scroll-behavior: smooth;
   overscroll-behavior: contain;
   min-height: 0;
@@ -246,11 +246,18 @@ header h1 {
   border-radius: 999px;
 }
 
+.chat-area::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* ================= WELCOME ================= */
+
 .welcome {
   margin: auto;
   text-align: center;
   opacity: 0.94;
   padding: 0 16px;
+  animation: fadeIn 0.5s ease;
 }
 
 .welcome h2 {
@@ -265,79 +272,156 @@ header h1 {
   line-height: 1.6;
 }
 
-.user-container,
-.ai-container {
+/* ================= MESSAGES ================= */
+
+.message {
   display: flex;
-  animation: messageFade 0.25s ease both;
+  gap: 12px;
+  animation: messageSlideIn 0.3s ease both;
+  padding: 4px 0;
 }
 
-.user-container {
+/* User messages - right aligned */
+.user-message-wrapper {
   justify-content: flex-end;
+  padding-left: 60px;
 }
 
-.ai-container {
+/* AI messages - left aligned with avatar */
+.ai-message-wrapper {
   justify-content: flex-start;
+  padding-right: 60px;
 }
 
-.user-message,
-.ai-message {
+/* Message avatar (AI only) */
+.message-avatar {
+  width: 34px;
+  height: 34px;
+  min-width: 34px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #2563eb, #60a5fa);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+  margin-top: 2px;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
+}
+
+/* Message content bubble */
+.message-content {
   max-width: min(72%, 780px);
   width: auto;
-  padding: 14px 16px;
+  padding: 12px 16px;
   border-radius: 18px;
-  line-height: 1.7;
-  font-size: clamp(15px, 1.95vw, 18px);
+  line-height: 1.6;
+  font-size: clamp(14px, 1.8vw, 16px);
   word-break: break-word;
   overflow-wrap: anywhere;
   white-space: normal;
-  box-shadow: 0 10px 24px rgba(2, 6, 23, 0.12);
+  position: relative;
 }
 
-.user-message {
+/* User message bubble */
+.user-content {
   background: #2563eb;
   color: #fff;
+  border-bottom-right-radius: 6px;
 }
 
-.ai-message {
-  background: #273549;
-  color: #f8fafc;
+/* AI message bubble */
+.ai-content {
+  background: #1e293b;
+  color: #e2e8f0;
+  border-bottom-left-radius: 6px;
+  border: 1px solid #334155;
 }
 
-.user-message p,
-.ai-message p,
-.user-message ul,
-.ai-message ul,
-.user-message ol,
-.ai-message ol,
-.user-message blockquote,
-.ai-message blockquote,
-.user-message pre,
-.ai-message pre {
-  margin: 0 0 0.75rem;
-}
+/* ================= COPY RESPONSE BUTTON ================= */
 
-.user-message :last-child,
-.ai-message :last-child {
-  margin-bottom: 0;
-}
-
-.user-message pre,
-.ai-message pre {
-  padding: 0.85rem 1rem;
-  border-radius: 12px;
-  background: rgba(15, 23, 42, 0.4);
-  overflow-x: auto;
-}
-
-.user-message code,
-.ai-message code {
-  padding: 0.2rem 0.4rem;
+.copy-response-btn {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  background: transparent;
+  color: #94a3b8;
+  border: 1px solid transparent;
   border-radius: 6px;
-  background: rgba(148, 163, 184, 0.18);
-  font-size: 0.95em;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  opacity: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  z-index: 5;
+  width: auto;
+  height: auto;
+  min-width: auto;
+  box-shadow: none;
 }
 
-/* ================= INPUT ================= */
+.ai-content:hover .copy-response-btn {
+  opacity: 1;
+}
+
+.copy-response-btn:hover {
+  background: #334155;
+  color: #e2e8f0;
+  border-color: #475569;
+  transform: none;
+  box-shadow: none;
+}
+
+.copy-response-btn.copied {
+  background: #1f6feb;
+  color: #fff;
+  border-color: #1f6feb;
+}
+
+/* ================= TYPING INDICATOR ================= */
+
+.typing-indicator {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  padding: 8px 0;
+}
+
+.typing-indicator span {
+  width: 8px;
+  height: 8px;
+  background: #94a3b8;
+  border-radius: 50%;
+  animation: typingBounce 1.4s infinite ease-in-out;
+}
+
+.typing-indicator span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.typing-indicator span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes typingBounce {
+  0%, 60%, 100% {
+    transform: translateY(0);
+    opacity: 0.4;
+  }
+  30% {
+    transform: translateY(-8px);
+    opacity: 1;
+  }
+}
+
+/* ================= INPUT FORM ================= */
 
 form {
   display: flex;
@@ -378,7 +462,7 @@ textarea:focus {
   box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.2);
 }
 
-button {
+button[type="submit"] {
   width: 52px;
   height: 52px;
   min-width: 52px;
@@ -391,30 +475,34 @@ button {
   transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
   box-shadow: 0 10px 22px rgba(37, 99, 235, 0.2);
   touch-action: manipulation;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-button:hover,
-button:focus-visible {
+button[type="submit"]:hover,
+button[type="submit"]:focus-visible {
   background: #1d4ed8;
   transform: translateY(-1px);
 }
 
-button:active {
+button[type="submit"]:active {
   transform: scale(0.96);
 }
 
-button:disabled {
-  opacity: 0.6;
+button[type="submit"]:disabled {
+  opacity: 0.5;
   cursor: not-allowed;
   transform: none;
+  box-shadow: none;
 }
 
 /* ================= ANIMATIONS ================= */
 
-@keyframes messageFade {
+@keyframes messageSlideIn {
   from {
     opacity: 0;
-    transform: translateY(6px);
+    transform: translateY(8px);
   }
   to {
     opacity: 1;
@@ -422,211 +510,39 @@ button:disabled {
   }
 }
 
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-@keyframes fadeIn{
+/* ================= SCROLLBAR ================= */
 
-    from{
-
-        opacity:0;
-        transform:translateY(10px);
-
-    }
-
-    to{
-
-        opacity:1;
-        transform:translateY(0);
-
-    }
-
-}
-/* ==========================
-   Typing Animation
-========================== */
-
-.typing{
-
-    display:flex;
-    gap:6px;
-    padding:6px;
-
+.chat-area::-webkit-scrollbar {
+  width: 6px;
 }
 
-.typing span{
-
-    width:10px;
-    height:10px;
-
-    background:white;
-
-    border-radius:50%;
-
-    animation:bounce 1.2s infinite;
-
+.chat-area::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 999px;
 }
 
-.typing span:nth-child(2){
-
-    animation-delay:.2s;
-
+.chat-area::-webkit-scrollbar-thumb:hover {
+  background: #475569;
 }
 
-.typing span:nth-child(3){
-
-    animation-delay:.4s;
-
+.chat-area::-webkit-scrollbar-track {
+  background: transparent;
 }
 
-@keyframes bounce{
+/* ================= SELECTION ================= */
 
-0%,80%,100%{
-
-transform:translateY(0);
-
-opacity:.4;
-
-}
-
-40%{
-
-transform:translateY(-8px);
-
-opacity:1;
-
-}
-
-}
-/* ==========================
-   Typing Animation
-========================== */
-
-.typing{
-    display: flex;
-    gap: 6px;
-    align-items: center;
-    padding: 4px 0;
-}
-
-.typing span{
-    width: 10px;
-    height: 10px;
-    background: white;
-    border-radius: 50%;
-    animation: bounce 1.2s infinite ease-in-out;
-}
-
-.typing span:nth-child(2){
-    animation-delay: 0.2s;
-}
-
-.typing span:nth-child(3){
-    animation-delay: 0.4s;
-}
-
-@keyframes bounce{
-
-    0%, 80%, 100%{
-        transform: translateY(0);
-        opacity: 0.4;
-    }
-
-    40%{
-        transform: translateY(-8px);
-        opacity: 1;
-    }
-
-}
-/* ==========================
-   Code Blocks
-========================== */
-
-.markdown-body pre{
-
-    position:relative;
-
-    background:#111827;
-
-    border:1px solid #30363d;
-
-    border-radius:12px;
-
-    padding:50px 18px 18px;
-
-    margin:18px 0;
-
-    overflow-x:auto;
-
-}
-.markdown-body code{
-    font-family:
-    "Cascadia Code",
-    "JetBrains Mono",
-    Consolas,
-    "Courier New",
-    monospace;
-
-    font-size:15px;
-}
-
-.markdown-body pre code{
-    background:none;
-    padding:0;
-    color:inherit;
-}
-
-.markdown-body :not(pre) > code{
-    background:#1e293b;
-    color:#60a5fa;
-    padding:3px 7px;
-    border-radius:6px;
-}
-/* ==========================
-   ChatGPT Style Copy Button
-========================== */
-
-.copy-btn{
-
-    position:absolute;
-
-    top:10px;
-
-    right:10px;
-
-    display:flex;
-
-    align-items:center;
-
-    justify-content:center;
-
-    gap:6px;
-
-    padding:6px 10px;
-
-    background:transparent;
-
-    color:#b4b4b4;
-
-    border:1px solid #444;
-
-    border-radius:8px;
-
-    font-size:13px;
-
-    font-weight:500;
-
-    cursor:pointer;
-
-    transition:all .25s ease;
-
-}
-
-.copy-btn:hover{
-
-    background:#2a2a2a;
-
-    color:white;
-
-    border-color:#666;
-
+::selection {
+  background: rgba(96, 165, 250, 0.3);
+  color: #fff;
 }
