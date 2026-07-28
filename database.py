@@ -46,8 +46,19 @@ def initialize_database():
         )
     """)
 
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            email TEXT NOT NULL UNIQUE,
+            password_hash TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+
     connection.commit()
     connection.close()
+
 
 
 def save_message(chat_id, role, content):
@@ -164,3 +175,49 @@ def get_chat_files(chat_id):
     rows = cursor.fetchall()
     connection.close()
     return [{"filename": row[0], "file_type": row[1], "uploaded_at": row[2]} for row in rows]
+
+
+def create_user(name, email, password_hash):
+    """Create a new user record and return the new user's id."""
+    connection = get_connection()
+    cursor = connection.cursor()
+    cursor.execute(
+        "INSERT INTO users(name, email, password_hash) VALUES(?, ?, ?)",
+        (name, email.lower(), password_hash)
+    )
+    connection.commit()
+    user_id = cursor.lastrowid
+    connection.close()
+    return user_id
+
+
+def get_user_by_email(email):
+    """Return a user record dict matching the given email, or None."""
+    connection = get_connection()
+    cursor = connection.cursor()
+    cursor.execute(
+        "SELECT id, name, email, password_hash FROM users WHERE email = ?",
+        (email.lower(),)
+    )
+    row = cursor.fetchone()
+    connection.close()
+    if not row:
+        return None
+    return {"id": row[0], "name": row[1], "email": row[2], "password_hash": row[3]}
+
+
+def get_user_by_id(user_id):
+    """Return a user record dict (without password hash) matching the given id, or None."""
+    connection = get_connection()
+    cursor = connection.cursor()
+    cursor.execute(
+        "SELECT id, name, email FROM users WHERE id = ?",
+        (user_id,)
+    )
+    row = cursor.fetchone()
+    connection.close()
+    if not row:
+        return None
+    return {"id": row[0], "name": row[1], "email": row[2]}
+
+

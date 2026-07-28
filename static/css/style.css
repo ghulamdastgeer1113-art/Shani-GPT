@@ -76,18 +76,32 @@ body {
 }
 
 .new-chat {
-  margin: 0 20px 16px;
-  padding: 0px 0px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: center;
+  flex-shrink: 0;
+  width: 200px;
+  max-width: calc(100% - 40px);
+  min-width: 160px;
+  height: 46px;
+  min-height: 46px;
+  margin: 0 auto 16px;
+  padding: 0 20px;
   border: none;
   border-radius: 14px;
   background: #2563eb;
   color: #fff;
   font-size: 15px;
   font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  overflow: visible;
   cursor: pointer;
   transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
   box-shadow: 0 10px 22px rgba(37, 99, 235, 0.22);
 }
+
 
 .new-chat:hover,
 .new-chat:focus-visible {

@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Shani GPT</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}" />
   <link rel="stylesheet" href="{{ url_for('static', filename='css/responsive.css') }}" />
 </head>
 <body>
@@ -15,6 +16,17 @@
       </div>
 
       <button id="new-chat-btn" class="new-chat">New Chat</button>
+
+      {% if user %}
+      <div class="user-badge">
+        <div class="user-avatar">{{ user.name[0] | upper }}</div>
+        <div class="user-info">
+          <div class="user-name">{{ user.name }}</div>
+          <div class="user-email">{{ user.email }}</div>
+        </div>
+        <a href="{{ url_for('logout') }}" class="logout-btn" title="Sign out">✕</a>
+      </div>
+      {% endif %}
 
       <div class="history-title">History</div>
       <div class="history" id="chat-list">

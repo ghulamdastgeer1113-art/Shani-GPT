@@ -1,6 +1,10 @@
-from flask import Flask, render_template, request, jsonify, Response, stream_with_context
+import re
+from functools import wraps
+
+from flask import Flask, render_template, request, jsonify, Response, stream_with_context, session, redirect, url_for, flash
 from openai import OpenAI
 from dotenv import load_dotenv
+from werkzeug.security import generate_password_hash, check_password_hash
 import os
 
 from database import (
@@ -14,6 +18,9 @@ from database import (
     delete_chat,
     search_chats,
     save_file_metadata,
+    create_user,
+    get_user_by_email,
+    get_user_by_id,
 )
 from utils import (
     ALLOWED_FILE_EXTENSIONS,
@@ -38,6 +45,7 @@ def save_generated_image(chat_id: int, prompt: str, image_url: str):
 load_dotenv()
 
 app = Flask(__name__)
+app.secret_key = os.getenv("FLASK_SECRET_KEY", os.urandom(24).hex())
 app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024  # Limit uploads to 16MB
 initialize_database()
 
@@ -91,18 +99,140 @@ def generate_chat_title(messages):
     return title[:60]
 
 
+# ─── Authentication Helpers ──────────────────────────────────────────────
+
+EMAIL_REGEX = re.compile(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$")
+
+
+def login_required(f):
+    """Decorator: redirect unauthenticated users to the login page."""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if "user_id" not in session:
+            return redirect(url_for("login"))
+        return f(*args, **kwargs)
+    return decorated_function
+
+
+# ─── Authentication Routes ───────────────────────────────────────────────
+
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    """Display login form and authenticate users."""
+    # If already logged in, redirect to chat
+    if "user_id" in session:
+        return redirect(url_for("index"))
+
+    if request.method == "POST":
+        email = request.form.get("email", "").strip().lower()
+        password = request.form.get("password", "")
+
+        if not email or not password:
+            flash("Please enter both email and password.", "error")
+            return render_template("login.html")
+
+        user = get_user_by_email(email)
+        if not user or not check_password_hash(user["password_hash"], password):
+            flash("Invalid email or password. Please try again.", "error")
+            return render_template("login.html")
+
+        # Login successful
+        session.permanent = True
+        session["user_id"] = user["id"]
+        session["user_name"] = user["name"]
+        session["user_email"] = user["email"]
+        flash(f"Welcome back, {user['name']}!", "success")
+        return redirect(url_for("index"))
+
+    return render_template("login.html")
+
+
+@app.route("/register", methods=["GET", "POST"])
+def register():
+    """Display registration form and create new user accounts."""
+    # If already logged in, redirect to chat
+    if "user_id" in session:
+        return redirect(url_for("index"))
+
+    if request.method == "POST":
+        name = request.form.get("name", "").strip()
+        email = request.form.get("email", "").strip().lower()
+        password = request.form.get("password", "")
+        confirm_password = request.form.get("confirm_password", "")
+
+        # ── Validation ──────────────────────────────────────────────
+        errors = []
+
+        if not name:
+            errors.append("Full name is required.")
+
+        if not email:
+            errors.append("Email address is required.")
+        elif not EMAIL_REGEX.match(email):
+            errors.append("Please enter a valid email address.")
+
+        if not password:
+            errors.append("Password is required.")
+        elif len(password) < 6:
+            errors.append("Password must be at least 6 characters.")
+
+        if password != confirm_password:
+            errors.append("Passwords do not match.")
+
+        if errors:
+            for error in errors:
+                flash(error, "error")
+            return render_template("register.html")
+
+        # ── Check for duplicate account ─────────────────────────────
+        existing = get_user_by_email(email)
+        if existing:
+            flash("An account with this email already exists. Please sign in.", "error")
+            return render_template("register.html")
+
+        # ── Create user ─────────────────────────────────────────────
+        password_hash = generate_password_hash(password)
+        user_id = create_user(name, email, password_hash)
+
+        # Auto-login after registration
+        session.permanent = True
+        session["user_id"] = user_id
+        session["user_name"] = name
+        session["user_email"] = email
+        flash(f"Account created successfully! Welcome, {name}!", "success")
+        return redirect(url_for("index"))
+
+    return render_template("register.html")
+
+
+@app.route("/logout")
+def logout():
+    """Log the user out and clear the session."""
+    session.clear()
+    flash("You have been logged out.", "success")
+    return redirect(url_for("login"))
+
+
+# ─── Protected Routes ────────────────────────────────────────────────────
+
+
 @app.route("/")
+@login_required
 def index():
+    user = get_user_by_id(session["user_id"])
     chats = get_all_chats()
     return render_template(
         "index.html",
         messages=chat_history,
         chats=chats,
         current_chat=current_chat,
-        chat_title=get_chat_title(current_chat) or "Shani GPT"
+        chat_title=get_chat_title(current_chat) or "Shani GPT",
+        user=user
     )
 
 @app.route("/chat", methods=["POST"])
+@login_required
 def chat():
     global chat_history
 
@@ -134,6 +264,7 @@ def chat():
 
 
 @app.route("/stream", methods=["POST"])
+@login_required
 def stream():
     data = request.get_json(silent=True) or {}
     user_message = (data.get("message") or "").strip()
@@ -179,6 +310,7 @@ def stream():
 
 
 @app.route("/new_chat", methods=["POST"])
+@login_required
 def new_chat():
     global current_chat, chat_history
 
@@ -189,6 +321,7 @@ def new_chat():
 
 
 @app.route("/load_chat/<int:chat_id>")
+@login_required
 def load_chat_route(chat_id):
     global current_chat, chat_history
 
@@ -200,6 +333,7 @@ def load_chat_route(chat_id):
 
 
 @app.route("/rename_chat", methods=["POST"])
+@login_required
 def rename_chat():
     data = request.get_json(silent=True) or {}
     chat_id = data.get("chat_id")
@@ -213,6 +347,7 @@ def rename_chat():
 
 
 @app.route("/delete_chat/<int:chat_id>", methods=["POST"])
+@login_required
 def delete_chat_route(chat_id):
     global current_chat, chat_history
 
@@ -230,6 +365,7 @@ def delete_chat_route(chat_id):
 
 
 @app.route("/search_chats")
+@login_required
 def search_chats_route():
     query = request.args.get("q", "").strip()
     if not query:
@@ -238,6 +374,7 @@ def search_chats_route():
 
 
 @app.route("/upload_file", methods=["POST"])
+@login_required
 def upload_file():
     global chat_history
 
@@ -270,6 +407,7 @@ def upload_file():
 
 
 @app.route("/upload_image", methods=["POST"])
+@login_required
 def upload_image():
     global chat_history
 
