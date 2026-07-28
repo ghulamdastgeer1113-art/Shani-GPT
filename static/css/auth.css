@@ -136,6 +136,19 @@
   }
 }
 
+/* Override global form styles (from style.css) */
+.auth-card form {
+  display: block;
+  padding: 0;
+  background: transparent;
+  border-top: none;
+  position: static;
+  bottom: auto;
+  z-index: auto;
+  align-items: normal;
+  gap: 0;
+}
+
 /* Form groups */
 .auth-form-group {
   margin-bottom: 20px;
@@ -155,6 +168,7 @@
 
 .auth-input {
   width: 100%;
+  height: 52px;
   padding: 14px 16px;
   background: #1f2937;
   border: 1px solid #334155;
@@ -191,23 +205,29 @@
 }
 
 .auth-input-wrapper .auth-input {
-  padding-left: 46px;
+  padding-left: 48px;
 }
 
-/* Submit button */
+/* Submit button - override global button styles */
 .auth-submit {
-  width: 100%;
-  padding: 14px;
+  width: 100% !important;
+  height: 52px !important;
+  min-width: auto !important;
+  padding: 0 24px;
   background: #2563eb;
   color: #fff;
   border: none;
-  border-radius: 14px;
+  border-radius: 14px !important;
   font-size: 16px;
   font-weight: 600;
   cursor: pointer;
   transition: background 0.25s ease, transform 0.2s ease, box-shadow 0.25s ease;
   box-shadow: 0 10px 22px rgba(37, 99, 235, 0.25);
-  margin-top: 4px;
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
 }
 
 .auth-submit:hover {
@@ -268,7 +288,7 @@
   text-decoration: underline;
 }
 
-/* Password toggle */
+/* Password toggle - override global button styles */
 .password-toggle {
   position: absolute;
   right: 14px;
@@ -280,23 +300,30 @@
   cursor: pointer;
   font-size: 18px;
   padding: 4px;
-  width: auto;
-  height: auto;
-  min-width: auto;
-  border-radius: 6px;
+  width: auto !important;
+  height: auto !important;
+  min-width: auto !important;
+  border-radius: 6px !important;
   transition: color 0.2s ease;
-  box-shadow: none;
+  box-shadow: none !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .password-toggle:hover {
   color: #94a3b8;
   background: none;
   transform: translateY(-50%);
-  box-shadow: none;
+  box-shadow: none !important;
 }
 
 /* Responsive */
-@media (max-width: 480px) {
+@media (max-width: 600px) {
+  .auth-container {
+    max-width: 100%;
+  }
+
   .auth-card {
     padding: 28px 20px 24px;
     border-radius: 20px;
@@ -314,6 +341,55 @@
     padding: 12px;
     align-items: flex-start;
     padding-top: 40px;
+  }
+
+  .auth-input {
+    height: 48px;
+    font-size: 15px;
+  }
+
+  .auth-submit {
+    height: 48px !important;
+    font-size: 15px;
+  }
+}
+
+@media (max-width: 400px) {
+  .auth-card {
+    padding: 24px 16px 20px;
+    border-radius: 16px;
+  }
+
+  .auth-logo .logo-text {
+    font-size: 24px;
+  }
+
+  .auth-logo p {
+    font-size: 13px;
+  }
+
+  .auth-form-group label {
+    font-size: 13px;
+  }
+
+  .auth-input {
+    height: 44px;
+    font-size: 14px;
+    padding: 10px 14px;
+  }
+
+  .auth-input-wrapper .auth-input {
+    padding-left: 42px;
+  }
+
+  .auth-input-wrapper .input-icon {
+    left: 14px;
+    font-size: 16px;
+  }
+
+  .auth-submit {
+    height: 44px !important;
+    font-size: 14px;
   }
 }
 
