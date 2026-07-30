@@ -67,6 +67,16 @@ db.init_app(app)
 # Create all SQLAlchemy tables
 with app.app_context():
     db.create_all()
+    # Migration: add name column to users_sa table if it doesn't exist
+    try:
+        from sqlalchemy import inspect
+        inspector = inspect(db.engine)
+        columns = [col['name'] for col in inspector.get_columns('users_sa')]
+        if 'name' not in columns:
+            db.session.execute(db.text("ALTER TABLE users_sa ADD COLUMN name VARCHAR(120) NOT NULL DEFAULT ''"))
+            db.session.commit()
+    except Exception:
+        pass  # Table might not exist yet, or column already exists
 
 # ─── Register Admin Blueprint ──────────────────────────────────────────────
 # Must be AFTER db.init_app() so admin_routes can import models
@@ -185,19 +195,33 @@ def login():
             flash("Please enter both email and password.", "error")
             return render_template("login.html")
 
-        user = get_user_by_email(email)
-        if not user or not check_password_hash(user["password_hash"], password):
-            flash("Invalid email or password. Please try again.", "error")
-            return render_template("login.html")
-
-        # Login successful
-        session.permanent = True
-        session["user_id"] = user["id"]
-        session["user_name"] = user["name"]
-        session["user_email"] = user["email"]
+        # Try UserSA (SQLAlchemy) first, fall back to raw SQLite users table
+        user = UserSA.query.filter_by(email=email.lower()).first()
+        if not user:
+            # Fallback: check the raw SQLite users table
+            user = get_user_by_email(email)
+            if not user or not check_password_hash(user["password_hash"], password):
+                flash("Invalid email or password. Please try again.", "error")
+                return render_template("login.html")
+            # Login successful with raw SQLite user
+            session.permanent = True
+            session["user_id"] = user["id"]
+            session["user_name"] = user["name"]
+            session["user_email"] = user["email"]
+        else:
+            # Login successful with UserSA
+            if not check_password_hash(user.password_hash, password):
+                flash("Invalid email or password. Please try again.", "error")
+                return render_template("login.html")
+            session.permanent = True
+            session["user_id"] = user.id
+            session["user_name"] = user.name or user.username
+            session["user_email"] = user.email
         # Clear any stale active chat from a previous session
         session.pop("current_chat_id", None)
-        flash(f"Welcome back, {user['name']}!", "success")
+        # Get display name (works for both UserSA objects and raw SQLite dicts)
+        display_name = user.name if hasattr(user, 'name') else user.get('name', user.get('username', 'User'))
+        flash(f"Welcome back, {display_name}!", "success")
         return redirect(url_for("index"))
 
     return render_template("login.html")
@@ -240,9 +264,10 @@ def register():
                 flash(error, "error")
             return render_template("register.html")
 
-        # ── Check for duplicate account ─────────────────────────────
+        # ── Check for duplicate account (check BOTH databases) ──────
         existing = get_user_by_email(email)
-        if existing:
+        existing_sa = UserSA.query.filter_by(email=email.lower()).first()
+        if existing or existing_sa:
             flash("An account with this email already exists. Please sign in.", "error")
             return render_template("register.html")
 
@@ -252,21 +277,19 @@ def register():
 
         # Also create user in SQLAlchemy User model for admin dashboard
         with app.app_context():
-            # Check if user already exists in SA model
-            existing_sa = UserSA.query.filter_by(email=email.lower()).first()
-            if not existing_sa:
-                sa_user = UserSA(
-                    username=name.lower().replace(" ", "_"),
-                    email=email.lower(),
-                    password_hash=password_hash,
-                    role="user"
-                )
-                db.session.add(sa_user)
-                db.session.commit()
+            sa_user = UserSA(
+                username=name.lower().replace(" ", "_"),
+                name=name,
+                email=email.lower(),
+                password_hash=password_hash,
+                role="user"
+            )
+            db.session.add(sa_user)
+            db.session.commit()
 
         # Auto-login after registration
         session.permanent = True
-        session["user_id"] = user_id
+        session["user_id"] = sa_user.id
         session["user_name"] = name
         session["user_email"] = email
         # New users start with no active chat
@@ -291,7 +314,10 @@ def logout():
 @app.route("/")
 @login_required
 def index():
-    user = get_user_by_id(session["user_id"])
+    # Try to get user from UserSA (SQLAlchemy) first, fall back to raw SQLite
+    user = UserSA.query.get(session["user_id"])
+    if not user:
+        user = get_user_by_id(session["user_id"])
     user_id = session["user_id"]
     chats = get_all_chats(user_id)
     current_chat = get_current_chat_id()
