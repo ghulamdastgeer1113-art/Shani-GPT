@@ -286,10 +286,12 @@ def register():
             )
             db.session.add(sa_user)
             db.session.commit()
+            # Capture the ID before the app context ends to avoid DetachedInstanceError
+            user_sa_id = sa_user.id
 
         # Auto-login after registration
         session.permanent = True
-        session["user_id"] = sa_user.id
+        session["user_id"] = user_sa_id
         session["user_name"] = name
         session["user_email"] = email
         # New users start with no active chat
