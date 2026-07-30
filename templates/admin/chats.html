@@ -1,0 +1,112 @@
+{# 
+  chats.html — Admin Chats List
+  =============================
+  Displays all chats with search, filters, and pagination.
+#}
+{% extends "admin/base.html" %}
+
+{% block content %}
+<div class="admin-page-header">
+  <h1>Chats</h1>
+  <p class="admin-page-subtitle">View all conversation history.</p>
+</div>
+
+<div class="admin-table-container">
+  {# Search and Filter Controls #}
+  <div class="admin-controls">
+    <form method="GET" class="admin-search-form">
+      <input type="text" name="search" value="{{ search_query }}" placeholder="Search by username or prompt..." class="admin-search-input" />
+      <button type="submit" class="admin-search-btn">
+        <i class="fas fa-search"></i>
+      </button>
+    </form>
+
+    <div class="admin-filter-controls">
+      <label>Filter:</label>
+      <select id="date-filter" class="admin-filter-select">
+        <option value="{{ url_for('admin.chats', date='all', search=search_query) }}" {{ 'selected' if date_filter == 'all' else '' }}>All Time</option>
+        <option value="{{ url_for('admin.chats', date='today', search=search_query) }}" {{ 'selected' if date_filter == 'today' else '' }}>Today</option>
+        <option value="{{ url_for('admin.chats', date='week', search=search_query) }}" {{ 'selected' if date_filter == 'week' else '' }}>Last 7 Days</option>
+        <option value="{{ url_for('admin.chats', date='month', search=search_query) }}" {{ 'selected' if date_filter == 'month' else '' }}>Last 30 Days</option>
+      </select>
+    </div>
+  </div>
+
+  <script>
+    document.getElementById('date-filter').addEventListener('change', function() {
+      window.location.href = this.value;
+    });
+  </script>
+
+  {# Chats Table #}
+  <table class="admin-table">
+    <thead>
+      <tr>
+        <th>Chat ID</th>
+        <th>Username</th>
+        <th>Prompt</th>
+        <th>Response</th>
+        <th>Timestamp</th>
+        <th>Feedback</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in chats_data %}
+      <tr class="admin-table-row-clickable">
+        <td><a href="{{ url_for('admin.chat_detail', chat_id=item.chat.id) }}" class="admin-link">{{ item.chat.id }}</a></td>
+        <td>{{ item.username }}</td>
+        <td class="admin-text-truncate" title="{{ item.chat.user_message }}">
+          {{ item.chat.user_message[:80] }}{% if item.chat.user_message|length > 80 %}...{% endif %}
+        </td>
+        <td class="admin-text-truncate" title="{{ item.chat.ai_response }}">
+          {{ item.chat.ai_response[:80] }}{% if item.chat.ai_response|length > 80 %}...{% endif %}
+        </td>
+        <td>{{ item.chat.created_at.strftime('%Y-%m-%d %H:%M') if item.chat.created_at else 'N/A' }}</td>
+        <td>
+          {% if item.feedback %}
+            {% if item.feedback.feedback_type == 'like' %}
+              <span class="admin-feedback-badge like"><i class="fas fa-thumbs-up"></i></span>
+            {% elif item.feedback.feedback_type == 'dislike' %}
+              <span class="admin-feedback-badge dislike"><i class="fas fa-thumbs-down"></i></span>
+            {% endif %}
+          {% else %}
+            <span class="admin-feedback-none">—</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% else %}
+      <tr>
+        <td colspan="6" class="admin-table-empty">
+          {% if search_query %}
+            No chats found matching "{{ search_query }}"
+          {% else %}
+            No chats yet
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  {# Pagination #}
+  {% if pagination.pages > 1 %}
+  <div class="admin-pagination">
+    {% if pagination.has_prev %}
+      <a href="{{ url_for('admin.chats', page=pagination.prev_num, date=date_filter, search=search_query) }}" class="admin-pagination-btn">
+        <i class="fas fa-chevron-left"></i> Previous
+      </a>
+    {% endif %}
+
+    <span class="admin-pagination-info">
+      Page {{ pagination.page }} of {{ pagination.pages }}
+    </span>
+
+    {% if pagination.has_next %}
+      <a href="{{ url_for('admin.chats', page=pagination.next_num, date=date_filter, search=search_query) }}" class="admin-pagination-btn">
+        Next <i class="fas fa-chevron-right"></i>
+      </a>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

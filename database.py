@@ -18,6 +18,7 @@ def initialize_database():
         CREATE TABLE IF NOT EXISTS chats (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             title TEXT NOT NULL,
+            user_id INTEGER NOT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """)
@@ -56,6 +57,15 @@ def initialize_database():
         )
     """)
 
+    # ── Migration: add user_id column to pre-existing chats tables ──
+    # Required for per-user chat isolation (privacy fix). Existing chats
+    # keep user_id = NULL so they are invisible to all users until manually
+    # reassigned. New chats always receive the creating user's id.
+    cursor.execute("PRAGMA table_info(chats)")
+    existing_columns = [col[1] for col in cursor.fetchall()]
+    if "user_id" not in existing_columns:
+        cursor.execute("ALTER TABLE chats ADD COLUMN user_id INTEGER")
+
     connection.commit()
     connection.close()
 
@@ -73,71 +83,101 @@ def save_message(chat_id, role, content):
     connection.close()
 
 
-def load_chat(chat_id):
-    """Load the conversation history for a specific chat."""
+def load_chat(chat_id, user_id):
+    """Load the conversation history for a specific chat (user-scoped).
+
+    Only returns messages if the chat belongs to the given user_id.
+    """
     connection = get_connection()
     cursor = connection.cursor()
     cursor.execute(
-        "SELECT role, content FROM messages WHERE chat_id = ? ORDER BY id",
-        (chat_id,)
+        """SELECT m.role, m.content
+           FROM messages m
+           JOIN chats c ON m.chat_id = c.id
+           WHERE m.chat_id = ? AND c.user_id = ?
+           ORDER BY m.id""",
+        (chat_id, user_id)
     )
     rows = cursor.fetchall()
     connection.close()
     return [{"role": role, "content": content} for role, content in rows]
 
 
-def create_chat(title="New Chat"):
-    """Create a new chat row and return its identifier."""
+def create_chat(title="New Chat", user_id=None):
+    """Create a new chat row associated with a user and return its identifier."""
     connection = get_connection()
     cursor = connection.cursor()
-    cursor.execute("INSERT INTO chats(title) VALUES(?)", (title,))
+    cursor.execute("INSERT INTO chats(title, user_id) VALUES(?, ?)", (title, user_id))
     connection.commit()
     chat_id = cursor.lastrowid
     connection.close()
     return chat_id
 
 
-def get_all_chats():
-    """Return all saved chat records ordered by most recent."""
+def get_all_chats(user_id):
+    """Return all chat records belonging to a specific user, ordered by most recent."""
     connection = get_connection()
     cursor = connection.cursor()
-    cursor.execute("SELECT id, title FROM chats ORDER BY id DESC")
+    cursor.execute("SELECT id, title FROM chats WHERE user_id = ? ORDER BY id DESC", (user_id,))
     chats = cursor.fetchall()
     connection.close()
     return [{"id": row[0], "title": row[1]} for row in chats]
 
 
-def get_chat_title(chat_id):
+def get_chat_owner(chat_id):
+    """Return the user_id of the chat owner, or None if the chat doesn't exist."""
     connection = get_connection()
     cursor = connection.cursor()
-    cursor.execute("SELECT title FROM chats WHERE id = ?", (chat_id,))
+    cursor.execute("SELECT user_id FROM chats WHERE id = ?", (chat_id,))
     row = cursor.fetchone()
     connection.close()
     return row[0] if row else None
 
 
-def update_chat_title(chat_id, title):
+def get_chat_title(chat_id, user_id):
+    """Return the title of a chat only if it belongs to the given user."""
+    connection = get_connection()
+    cursor = connection.cursor()
+    cursor.execute("SELECT title FROM chats WHERE id = ? AND user_id = ?", (chat_id, user_id))
+    row = cursor.fetchone()
+    connection.close()
+    return row[0] if row else None
+
+
+def update_chat_title(chat_id, title, user_id):
+    """Update a chat's title only if it belongs to the given user."""
     connection = get_connection()
     cursor = connection.cursor()
     cursor.execute(
-        "UPDATE chats SET title = ? WHERE id = ?",
-        (title, chat_id)
+        "UPDATE chats SET title = ? WHERE id = ? AND user_id = ?",
+        (title, chat_id, user_id)
     )
     connection.commit()
     connection.close()
 
 
-def delete_chat(chat_id):
+def delete_chat(chat_id, user_id):
+    """Delete a chat and its messages/files only if it belongs to the given user.
+
+    Returns True if a chat was deleted, False otherwise.
+    """
     connection = get_connection()
     cursor = connection.cursor()
+    # Verify the chat belongs to the user before deleting
+    cursor.execute("SELECT id FROM chats WHERE id = ? AND user_id = ?", (chat_id, user_id))
+    if not cursor.fetchone():
+        connection.close()
+        return False
     cursor.execute("DELETE FROM messages WHERE chat_id = ?", (chat_id,))
     cursor.execute("DELETE FROM files WHERE chat_id = ?", (chat_id,))
     cursor.execute("DELETE FROM chats WHERE id = ?", (chat_id,))
     connection.commit()
     connection.close()
+    return True
 
 
-def search_chats(query):
+def search_chats(query, user_id):
+    """Search chat titles and message content for a specific user only."""
     connection = get_connection()
     cursor = connection.cursor()
     q = f"%{query.lower()}%"
@@ -145,9 +185,9 @@ def search_chats(query):
         SELECT DISTINCT c.id, c.title
         FROM chats c
         LEFT JOIN messages m ON c.id = m.chat_id
-        WHERE LOWER(c.title) LIKE ? OR LOWER(m.content) LIKE ?
+        WHERE c.user_id = ? AND (LOWER(c.title) LIKE ? OR LOWER(m.content) LIKE ?)
         ORDER BY c.id DESC
-    """, (q, q))
+    """, (user_id, q, q))
     rows = cursor.fetchall()
     connection.close()
     return [{"id": row[0], "title": row[1]} for row in rows]
@@ -219,5 +259,3 @@ def get_user_by_id(user_id):
     if not row:
         return None
     return {"id": row[0], "name": row[1], "email": row[2]}
-
-

@@ -14,6 +14,7 @@ from database import (
     get_all_chats,
     load_chat,
     get_chat_title,
+    get_chat_owner,
     update_chat_title,
     delete_chat,
     search_chats,
@@ -34,6 +35,12 @@ from utils import (
     make_unique_filename,
 )
 
+# ─── SQLAlchemy Models (for admin dashboard data collection) ───────────────
+from models import db, User as UserSA, Chat as ChatSA, Feedback as FeedbackSA
+
+# ─── Admin Panel Blueprint ─────────────────────────────────────────────────
+from admin_routes import admin_bp
+
 def save_generated_image(chat_id: int, prompt: str, image_url: str):
     """
     Placeholder for future image metadata persistence.
@@ -47,6 +54,25 @@ load_dotenv()
 app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET_KEY", os.urandom(24).hex())
 app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024  # Limit uploads to 16MB
+
+# ─── SQLAlchemy Configuration ──────────────────────────────────────────────
+# Use SQLite for development; switch to PostgreSQL in production
+app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv(
+    "DATABASE_URL",
+    "sqlite:///shani_admin.db"  # Separate DB file for admin models
+)
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+db.init_app(app)
+
+# Create all SQLAlchemy tables
+with app.app_context():
+    db.create_all()
+
+# ─── Register Admin Blueprint ──────────────────────────────────────────────
+# Must be AFTER db.init_app() so admin_routes can import models
+app.register_blueprint(admin_bp)
+
+# ─── Existing raw-SQLite database initialization ──────────────────────────
 initialize_database()
 
 UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), "uploads")
@@ -55,13 +81,11 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 ALLOWED_FILE_EXTENSIONS = {"pdf", "docx", "txt", "csv"}
 ALLOWED_IMAGE_EXTENSIONS = {"png", "jpg", "jpeg", "gif", "bmp", "webp"}
 
-existing_chats = get_all_chats()
-if existing_chats:
-    current_chat = existing_chats[0]["id"]
-    chat_history = load_chat(current_chat)
-else:
-    current_chat = create_chat(title="Shani GPT")
-    chat_history = []
+# NOTE: The previous module-level globals `current_chat` and `chat_history`
+# were removed because they were shared across ALL users in the Flask process,
+# causing a serious privacy bug (users could see each other's conversations).
+# Chat state is now tracked per-user via the Flask session and loaded from the
+# database on each request. See get_current_chat_id() below.
 
 openrouter_api_key = os.getenv("OPENROUTER_API_KEY", "").strip()
 if not openrouter_api_key or "${{" in openrouter_api_key or "}}" in openrouter_api_key:
@@ -73,6 +97,35 @@ client = OpenAI(
     api_key=openrouter_api_key,
     base_url="https://openrouter.ai/api/v1",
 )
+
+
+def get_current_chat_id():
+    """Return the current user's active chat id from the session.
+
+    If the user has no active chat in the session, pick their most recent chat
+    from the database, or create a new one if they have none. The chosen id is
+    stored back in the session so subsequent requests in the same session reuse
+    it. This replaces the old shared module-level `current_chat` global.
+    """
+    user_id = session.get("user_id")
+    if not user_id:
+        return None
+
+    chat_id = session.get("current_chat_id")
+    if chat_id:
+        # Verify the chat still exists and belongs to this user
+        owner = get_chat_owner(chat_id)
+        if owner == user_id:
+            return chat_id
+
+    # No valid active chat — pick the user's most recent one
+    chats = get_all_chats(user_id)
+    if chats:
+        chat_id = chats[0]["id"]
+    else:
+        chat_id = create_chat(title="Shani GPT", user_id=user_id)
+    session["current_chat_id"] = chat_id
+    return chat_id
 
 
 def generate_chat_title(messages):
@@ -142,6 +195,8 @@ def login():
         session["user_id"] = user["id"]
         session["user_name"] = user["name"]
         session["user_email"] = user["email"]
+        # Clear any stale active chat from a previous session
+        session.pop("current_chat_id", None)
         flash(f"Welcome back, {user['name']}!", "success")
         return redirect(url_for("index"))
 
@@ -195,11 +250,27 @@ def register():
         password_hash = generate_password_hash(password)
         user_id = create_user(name, email, password_hash)
 
+        # Also create user in SQLAlchemy User model for admin dashboard
+        with app.app_context():
+            # Check if user already exists in SA model
+            existing_sa = UserSA.query.filter_by(email=email.lower()).first()
+            if not existing_sa:
+                sa_user = UserSA(
+                    username=name.lower().replace(" ", "_"),
+                    email=email.lower(),
+                    password_hash=password_hash,
+                    role="user"
+                )
+                db.session.add(sa_user)
+                db.session.commit()
+
         # Auto-login after registration
         session.permanent = True
         session["user_id"] = user_id
         session["user_name"] = name
         session["user_email"] = email
+        # New users start with no active chat
+        session.pop("current_chat_id", None)
         flash(f"Account created successfully! Welcome, {name}!", "success")
         return redirect(url_for("index"))
 
@@ -221,20 +292,25 @@ def logout():
 @login_required
 def index():
     user = get_user_by_id(session["user_id"])
-    chats = get_all_chats()
+    user_id = session["user_id"]
+    chats = get_all_chats(user_id)
+    current_chat = get_current_chat_id()
+    # Load this user's own conversation for the active chat
+    messages = load_chat(current_chat, user_id) if current_chat else []
     return render_template(
         "index.html",
-        messages=chat_history,
+        messages=messages,
         chats=chats,
         current_chat=current_chat,
-        chat_title=get_chat_title(current_chat) or "Shani GPT",
+        chat_title=get_chat_title(current_chat, user_id) or "Shani GPT",
         user=user
     )
 
 @app.route("/chat", methods=["POST"])
 @login_required
 def chat():
-    global chat_history
+    user_id = session["user_id"]
+    current_chat = get_current_chat_id()
 
     data = request.get_json(silent=True) or {}
     message = data.get("message", "").strip()
@@ -242,6 +318,8 @@ def chat():
     if not message:
         return jsonify({"error": "Message is required"}), 400
 
+    # Load this user's own conversation history from the database
+    chat_history = load_chat(current_chat, user_id)
     chat_history.append({"role": "user", "content": message})
     save_message(current_chat, "user", message)
 
@@ -254,11 +332,11 @@ def chat():
     chat_history.append({"role": "assistant", "content": reply})
     save_message(current_chat, "assistant", reply)
 
-    current_title = get_chat_title(current_chat)
+    current_title = get_chat_title(current_chat, user_id)
     if current_title in {"New Chat", "Shani GPT"}:
         title = generate_chat_title(chat_history)
         if title:
-            update_chat_title(current_chat, title)
+            update_chat_title(current_chat, title, user_id)
 
     return jsonify({"reply": reply})
 
@@ -266,20 +344,23 @@ def chat():
 @app.route("/stream", methods=["POST"])
 @login_required
 def stream():
+    user_id = session["user_id"]
+    current_chat = get_current_chat_id()
+
     data = request.get_json(silent=True) or {}
     user_message = (data.get("message") or "").strip()
 
     if user_message and is_image_prompt(user_message):
         prompt = clean_image_prompt(user_message)
         image_url = build_pollinations_url(prompt)
-        # TODO: save_generated_image(current_chat_id, prompt, image_url)
+        # TODO: save_generated_image(current_chat, prompt, image_url)
         return jsonify({"type": "image", "url": image_url, "prompt": prompt})
-
-    global chat_history
 
     if not user_message:
         return jsonify({"error": "Message is required"}), 400
 
+    # Load this user's own conversation history from the database
+    chat_history = load_chat(current_chat, user_id)
     chat_history.append({"role": "user", "content": user_message})
     save_message(current_chat, "user", user_message)
 
@@ -300,11 +381,11 @@ def stream():
         chat_history.append({"role": "assistant", "content": full_reply})
         save_message(current_chat, "assistant", full_reply)
 
-        current_title = get_chat_title(current_chat)
+        current_title = get_chat_title(current_chat, user_id)
         if current_title in {"New Chat", "Shani GPT"}:
             title = generate_chat_title(chat_history)
             if title:
-                update_chat_title(current_chat, title)
+                update_chat_title(current_chat, title, user_id)
 
     return Response(stream_with_context(generate()), mimetype="text/plain; charset=utf-8")
 
@@ -312,10 +393,10 @@ def stream():
 @app.route("/new_chat", methods=["POST"])
 @login_required
 def new_chat():
-    global current_chat, chat_history
-
-    current_chat = create_chat(title="New Chat")
-    chat_history = []
+    user_id = session["user_id"]
+    # Create a new chat owned by the current user and make it the active one
+    current_chat = create_chat(title="New Chat", user_id=user_id)
+    session["current_chat_id"] = current_chat
 
     return jsonify({"success": True, "chat_id": current_chat})
 
@@ -323,11 +404,16 @@ def new_chat():
 @app.route("/load_chat/<int:chat_id>")
 @login_required
 def load_chat_route(chat_id):
-    global current_chat, chat_history
+    user_id = session["user_id"]
 
-    current_chat = chat_id
-    chat_history = load_chat(chat_id)
-    title = get_chat_title(chat_id) or "Shani GPT"
+    # Verify the chat belongs to the current user before loading
+    owner = get_chat_owner(chat_id)
+    if owner != user_id:
+        return jsonify({"error": "Chat not found"}), 404
+
+    session["current_chat_id"] = chat_id
+    chat_history = load_chat(chat_id, user_id)
+    title = get_chat_title(chat_id, user_id) or "Shani GPT"
 
     return jsonify({"messages": chat_history, "title": title})
 
@@ -335,6 +421,7 @@ def load_chat_route(chat_id):
 @app.route("/rename_chat", methods=["POST"])
 @login_required
 def rename_chat():
+    user_id = session["user_id"]
     data = request.get_json(silent=True) or {}
     chat_id = data.get("chat_id")
     title = data.get("title", "").strip()
@@ -342,41 +429,55 @@ def rename_chat():
     if not chat_id or not title:
         return jsonify({"error": "Chat ID and title are required"}), 400
 
-    update_chat_title(chat_id, title)
+    # Verify the chat belongs to the current user before renaming
+    owner = get_chat_owner(chat_id)
+    if owner != user_id:
+        return jsonify({"error": "Chat not found"}), 404
+
+    update_chat_title(chat_id, title, user_id)
     return jsonify({"success": True, "title": title})
 
 
 @app.route("/delete_chat/<int:chat_id>", methods=["POST"])
 @login_required
 def delete_chat_route(chat_id):
-    global current_chat, chat_history
+    user_id = session["user_id"]
 
-    delete_chat(chat_id)
+    # delete_chat now verifies ownership and returns False if not the owner
+    deleted = delete_chat(chat_id, user_id)
+    if not deleted:
+        return jsonify({"error": "Chat not found"}), 404
 
-    remaining = get_all_chats()
+    # If the deleted chat was the active one, clear it from the session
+    if session.get("current_chat_id") == chat_id:
+        session.pop("current_chat_id", None)
+
+    remaining = get_all_chats(user_id)
     if remaining:
         current_chat = remaining[0]["id"]
-        chat_history = load_chat(current_chat)
-        return jsonify({"success": True, "chat_id": current_chat, "title": get_chat_title(current_chat)})
+        session["current_chat_id"] = current_chat
+        return jsonify({"success": True, "chat_id": current_chat, "title": get_chat_title(current_chat, user_id)})
     else:
-        current_chat = create_chat(title="New Chat")
-        chat_history = []
+        current_chat = create_chat(title="New Chat", user_id=user_id)
+        session["current_chat_id"] = current_chat
         return jsonify({"success": True, "chat_id": current_chat, "title": "New Chat"})
 
 
 @app.route("/search_chats")
 @login_required
 def search_chats_route():
+    user_id = session["user_id"]
     query = request.args.get("q", "").strip()
     if not query:
-        return jsonify(get_all_chats())
-    return jsonify(search_chats(query))
+        return jsonify(get_all_chats(user_id))
+    return jsonify(search_chats(query, user_id))
 
 
 @app.route("/upload_file", methods=["POST"])
 @login_required
 def upload_file():
-    global chat_history
+    user_id = session["user_id"]
+    current_chat = get_current_chat_id()
 
     file = request.files.get("file")
     if not file or not file.filename:
@@ -400,7 +501,6 @@ def upload_file():
         f"Extracted text:\n{extracted_text}"
     )
 
-    chat_history.append({"role": "assistant", "content": assistant_text})
     save_message(current_chat, "assistant", assistant_text)
 
     return jsonify({"assistant_text": assistant_text})
@@ -409,7 +509,8 @@ def upload_file():
 @app.route("/upload_image", methods=["POST"])
 @login_required
 def upload_image():
-    global chat_history
+    user_id = session["user_id"]
+    current_chat = get_current_chat_id()
 
     image = request.files.get("image")
     if not image or not image.filename:
@@ -434,10 +535,122 @@ def upload_image():
         f"Extracted text:\n{extracted_text}"
     )
 
-    chat_history.append({"role": "assistant", "content": assistant_text})
     save_message(current_chat, "assistant", assistant_text)
 
     return jsonify({"assistant_text": assistant_text})
+
+
+# ─── Save Chat to SQLAlchemy (for admin dashboard) ────────────────────────
+
+@app.route("/save_chat_sa", methods=["POST"])
+@login_required
+def save_chat_sa():
+    """
+    Store a user message + AI response pair in the SQLAlchemy Chat model.
+    Called from the frontend after each AI response is received.
+    This is separate from the raw-SQLite 'messages' table which stores
+    individual role/content pairs for the chat UI.
+    """
+    data = request.get_json(silent=True) or {}
+    user_message = data.get("user_message", "").strip()
+    ai_response = data.get("ai_response", "").strip()
+
+    if not user_message or not ai_response:
+        return jsonify({"error": "Both user_message and ai_response are required"}), 400
+
+    # Get the SQLAlchemy user record for the current session user
+    user_email = session.get("user_email", "")
+    sa_user = UserSA.query.filter_by(email=user_email).first()
+    if not sa_user:
+        return jsonify({"error": "User not found in admin database"}), 404
+
+    # Create the chat record
+    chat_record = ChatSA(
+        user_id=sa_user.id,
+        user_message=user_message,
+        ai_response=ai_response
+    )
+    db.session.add(chat_record)
+    db.session.commit()
+
+    return jsonify({
+        "success": True,
+        "chat_id": chat_record.id,
+        "message": "Chat saved for admin dashboard"
+    })
+
+
+# ─── Feedback Endpoint (Like / Dislike) ───────────────────────────────────
+
+@app.route("/feedback", methods=["POST"])
+@login_required
+def submit_feedback():
+    """
+    Store like/dislike feedback for an AI response.
+    Uses upsert logic: if the user already submitted feedback for this chat,
+    update it; otherwise create a new record.
+
+    Request body:
+        {
+            "chat_id": <int>,       # The ChatSA.id from save_chat_sa
+            "feedback_type": "like" | "dislike" | "none"
+        }
+
+    If feedback_type is "none", the existing feedback is deleted (toggle off).
+    """
+    data = request.get_json(silent=True) or {}
+    chat_sa_id = data.get("chat_id")
+    feedback_type = data.get("feedback_type", "").strip().lower()
+
+    if not chat_sa_id:
+        return jsonify({"error": "chat_id is required"}), 400
+
+    if feedback_type not in ("like", "dislike", "none"):
+        return jsonify({"error": "feedback_type must be 'like', 'dislike', or 'none'"}), 400
+
+    # Get the SQLAlchemy user record
+    user_email = session.get("user_email", "")
+    sa_user = UserSA.query.filter_by(email=user_email).first()
+    if not sa_user:
+        return jsonify({"error": "User not found in admin database"}), 404
+
+    # Verify the chat exists
+    chat_record = ChatSA.query.get(chat_sa_id)
+    if not chat_record:
+        return jsonify({"error": "Chat record not found"}), 404
+
+    # Upsert logic: find existing feedback or create new one
+    existing_feedback = FeedbackSA.query.filter_by(
+        user_id=sa_user.id,
+        chat_id=chat_sa_id
+    ).first()
+
+    if feedback_type == "none":
+        # Remove feedback (user toggled off)
+        if existing_feedback:
+            db.session.delete(existing_feedback)
+            db.session.commit()
+        return jsonify({"success": True, "message": "Feedback removed"})
+
+    if existing_feedback:
+        # Update existing feedback
+        existing_feedback.feedback_type = feedback_type
+    else:
+        # Create new feedback
+        new_feedback = FeedbackSA(
+            user_id=sa_user.id,
+            chat_id=chat_sa_id,
+            feedback_type=feedback_type
+        )
+        db.session.add(new_feedback)
+
+    db.session.commit()
+
+    return jsonify({
+        "success": True,
+        "feedback_type": feedback_type,
+        "message": f"Feedback recorded: {feedback_type}"
+    })
 
 
 if __name__ == "__main__":

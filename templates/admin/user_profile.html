@@ -1,0 +1,114 @@
+{# 
+  user_profile.html — Admin User Profile
+  ========================================
+  Displays detailed information about a specific user.
+#}
+{% extends "admin/base.html" %}
+
+{% block content %}
+<div class="admin-page-header">
+  <a href="{{ url_for('admin.users') }}" class="admin-back-link">
+    <i class="fas fa-arrow-left"></i> Back to Users
+  </a>
+  <h1>User Profile</h1>
+  <p class="admin-page-subtitle">Detailed information for {{ profile_user.username }}</p>
+</div>
+
+<div class="admin-profile-grid">
+  {# User Info Card #}
+  <div class="admin-profile-card">
+    <h2>User Information</h2>
+    <div class="admin-profile-details">
+      <div class="admin-profile-row">
+        <span class="admin-profile-label">User ID</span>
+        <span class="admin-profile-value">{{ profile_user.id }}</span>
+      </div>
+      <div class="admin-profile-row">
+        <span class="admin-profile-label">Username</span>
+        <span class="admin-profile-value">{{ profile_user.username }}</span>
+      </div>
+      <div class="admin-profile-row">
+        <span class="admin-profile-label">Email</span>
+        <span class="admin-profile-value">{{ profile_user.email }}</span>
+      </div>
+      <div class="admin-profile-row">
+        <span class="admin-profile-label">Role</span>
+        <span class="admin-profile-value">
+          <span class="admin-badge-role {{ 'admin' if profile_user.role == 'admin' else 'user' }}">
+            {{ profile_user.role }}
+          </span>
+        </span>
+      </div>
+      <div class="admin-profile-row">
+        <span class="admin-profile-label">Date Joined</span>
+        <span class="admin-profile-value">{{ profile_user.created_at.strftime('%Y-%m-%d %H:%M') if profile_user.created_at else 'N/A' }}</span>
+      </div>
+    </div>
+  </div>
+
+  {# Stats Card #}
+  <div class="admin-profile-card">
+    <h2>Statistics</h2>
+    <div class="admin-profile-stats">
+      <div class="admin-stat-item">
+        <span class="admin-stat-value">{{ total_chats }}</span>
+        <span class="admin-stat-label">Total Chats</span>
+      </div>
+      <div class="admin-stat-item">
+        <span class="admin-stat-value">{{ total_likes }}</span>
+        <span class="admin-stat-label">Likes Given</span>
+      </div>
+      <div class="admin-stat-item">
+        <span class="admin-stat-value">{{ total_dislikes }}</span>
+        <span class="admin-stat-label">Dislikes Given</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+{# Recent Activity #}
+<div class="admin-recent-activity">
+  <h2>Recent Chats (Last 10)</h2>
+  
+  {% if recent_chats %}
+  <table class="admin-table">
+    <thead>
+      <tr>
+        <th>User Prompt</th>
+        <th>AI Response</th>
+        <th>Timestamp</th>
+        <th>Feedback</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in recent_chats %}
+      <tr>
+        <td class="admin-text-truncate" title="{{ item.chat.user_message }}">
+          {{ item.chat.user_message[:100] }}{% if item.chat.user_message|length > 100 %}...{% endif %}
+        </td>
+        <td class="admin-text-truncate" title="{{ item.chat.ai_response }}">
+          {{ item.chat.ai_response[:100] }}{% if item.chat.ai_response|length > 100 %}...{% endif %}
+        </td>
+        <td>{{ item.chat.created_at.strftime('%Y-%m-%d %H:%M') if item.chat.created_at else 'N/A' }}</td>
+        <td>
+          {% if item.feedback %}
+            {% if item.feedback.feedback_type == 'like' %}
+              <span class="admin-feedback-badge like"><i class="fas fa-thumbs-up"></i> Like</span>
+            {% elif item.feedback.feedback_type == 'dislike' %}
+              <span class="admin-feedback-badge dislike"><i class="fas fa-thumbs-down"></i> Dislike</span>
+            {% endif %}
+          {% else %}
+            <span class="admin-feedback-none">No feedback</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="admin-placeholder">
+    <p>No chat history yet.</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

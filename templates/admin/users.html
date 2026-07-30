@@ -1,0 +1,106 @@
+{# 
+  users.html — Admin Users List
+  ==============================
+  Displays all users in a searchable, sortable table with pagination.
+#}
+{% extends "admin/base.html" %}
+
+{% block content %}
+<div class="admin-page-header">
+  <h1>Users</h1>
+  <p class="admin-page-subtitle">Manage registered users.</p>
+</div>
+
+<div class="admin-table-container">
+  {# Search and Sort Controls #}
+  <div class="admin-controls">
+    <form method="GET" class="admin-search-form">
+      <input type="text" name="search" value="{{ search_query }}" placeholder="Search by username or email..." class="admin-search-input" />
+      <button type="submit" class="admin-search-btn">
+        <i class="fas fa-search"></i>
+      </button>
+    </form>
+
+    <div class="admin-sort-controls">
+      <label>Sort by:</label>
+      <select id="sort-select" class="admin-sort-select">
+        <option value="{{ url_for('admin.users', sort='newest', search=search_query) }}" {{ 'selected' if sort_by == 'newest' else '' }}>Newest First</option>
+        <option value="{{ url_for('admin.users', sort='oldest', search=search_query) }}" {{ 'selected' if sort_by == 'oldest' else '' }}>Oldest First</option>
+        <option value="{{ url_for('admin.users', sort='username_asc', search=search_query) }}" {{ 'selected' if sort_by == 'username_asc' else '' }}>Username (A-Z)</option>
+        <option value="{{ url_for('admin.users', sort='username_desc', search=search_query) }}" {{ 'selected' if sort_by == 'username_desc' else '' }}>Username (Z-A)</option>
+      </select>
+    </div>
+
+    <script>
+      document.getElementById('sort-select').addEventListener('change', function() {
+        window.location.href = this.value;
+      });
+    </script>
+  </div>
+
+  {# Users Table #}
+  <table class="admin-table">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Username</th>
+        <th>Email</th>
+        <th>Role</th>
+        <th>Date Joined</th>
+        <th>Total Chats</th>
+        <th>Likes</th>
+        <th>Dislikes</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in users_data %}
+      <tr class="admin-table-row-clickable">
+        <td><a href="{{ url_for('admin.user_profile', user_id=item.user.id) }}" class="admin-link">{{ item.user.id }}</a></td>
+        <td><a href="{{ url_for('admin.user_profile', user_id=item.user.id) }}" class="admin-link">{{ item.user.username }}</a></td>
+        <td>{{ item.user.email }}</td>
+        <td>
+          <span class="admin-badge-role {{ 'admin' if item.user.role == 'admin' else 'user' }}">
+            {{ item.user.role }}
+          </span>
+        </td>
+        <td>{{ item.user.created_at.strftime('%Y-%m-%d') if item.user.created_at else 'N/A' }}</td>
+        <td>{{ item.chat_count }}</td>
+        <td>{{ item.likes }}</td>
+        <td>{{ item.dislikes }}</td>
+      </tr>
+      {% else %}
+      <tr>
+        <td colspan="8" class="admin-table-empty">
+          {% if search_query %}
+            No users found matching "{{ search_query }}"
+          {% else %}
+            No users yet
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  {# Pagination #}
+  {% if pagination.pages > 1 %}
+  <div class="admin-pagination">
+    {% if pagination.has_prev %}
+      <a href="{{ url_for('admin.users', page=pagination.prev_num, sort=sort_by, search=search_query) }}" class="admin-pagination-btn">
+        <i class="fas fa-chevron-left"></i> Previous
+      </a>
+    {% endif %}
+
+    <span class="admin-pagination-info">
+      Page {{ pagination.page }} of {{ pagination.pages }}
+    </span>
+
+    {% if pagination.has_next %}
+      <a href="{{ url_for('admin.users', page=pagination.next_num, sort=sort_by, search=search_query) }}" class="admin-pagination-btn">
+        Next <i class="fas fa-chevron-right"></i>
+      </a>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -16,6 +16,7 @@ const sidebarOverlay = document.getElementById("sidebar-overlay");
 const chatList = document.getElementById("chat-list");
 
 let isSending = false;
+let lastUserMessage = "";
 
 // ─── Configure Marked.js ──────────────────────────────────────────────────
 
@@ -56,7 +57,6 @@ function escapeHtml(text) {
 // ─── Copy Response Button ─────────────────────────────────────────────────
 
 function addResponseCopyButton(container) {
-  // Don't add twice
   if (container.querySelector(".copy-response-btn")) return;
 
   const btn = document.createElement("button");
@@ -64,7 +64,6 @@ function addResponseCopyButton(container) {
   btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg> Copy`;
 
   btn.addEventListener("click", async () => {
-    // Get the text content of the markdown body (without HTML tags)
     const markdownBody = container.querySelector(".markdown-body");
     const textToCopy = markdownBody ? markdownBody.innerText : container.innerText;
 
@@ -77,7 +76,6 @@ function addResponseCopyButton(container) {
         btn.classList.remove("copied");
       }, 2000);
     } catch (err) {
-      // Fallback for older browsers
       const textarea = document.createElement("textarea");
       textarea.value = textToCopy;
       document.body.appendChild(textarea);
@@ -102,7 +100,6 @@ function addCodeCopyButtons() {
   const blocks = document.querySelectorAll(".markdown-body pre");
 
   blocks.forEach((block) => {
-    // Don't add twice
     if (block.querySelector(".copy-code-btn")) return;
 
     const button = document.createElement("button");
@@ -122,7 +119,6 @@ function addCodeCopyButtons() {
           button.classList.remove("copied");
         }, 2000);
       } catch (err) {
-        // Fallback
         const textarea = document.createElement("textarea");
         textarea.value = textToCopy;
         document.body.appendChild(textarea);
@@ -148,8 +144,178 @@ function renderMarkdown(text) {
   if (typeof marked !== 'undefined') {
     return marked.parse(text);
   }
-  // Fallback: escape HTML and preserve line breaks
   return escapeHtml(text).replace(/\n/g, '<br>');
+}
+
+// ─── Regenerate Response ──────────────────────────────────────────────────
+
+function addRegenerateButton(aiMsgDiv, userMessageText) {
+  const actionsRow = aiMsgDiv.querySelector(".ai-actions");
+  if (!actionsRow || actionsRow.querySelector(".regenerate-btn")) return;
+
+  const btn = document.createElement("button");
+  btn.className = "regenerate-btn";
+  btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg> Regenerate`;
+
+  btn.addEventListener("click", async () => {
+    if (btn.classList.contains("regenerating")) return;
+    btn.classList.add("regenerating");
+    btn.innerHTML = `<div class="regenerating-spinner"></div> Regenerating...`;
+
+    // Find the AI content and markdown body within this message
+    const aiContent = aiMsgDiv.querySelector(".ai-content");
+    const markdownBody = aiMsgDiv.querySelector(".markdown-body");
+
+    // Show loading state in the message
+    if (markdownBody) {
+      markdownBody.innerHTML = `<div class="typing-indicator"><span></span><span></span><span></span></div>`;
+    }
+
+    try {
+      const response = await fetch("/stream", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: userMessageText })
+      });
+
+      if (!response.ok) throw new Error("Server error: " + response.status);
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let fullReply = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const chunk = decoder.decode(value);
+        fullReply += chunk;
+        if (markdownBody) {
+          markdownBody.innerHTML = renderMarkdown(fullReply);
+        }
+        scrollToBottom();
+      }
+
+      // Re-highlight code blocks
+      if (markdownBody && typeof hljs !== 'undefined') {
+        markdownBody.querySelectorAll('pre code').forEach((block) => {
+          hljs.highlightElement(block);
+        });
+      }
+      addCodeCopyButtons();
+
+    } catch (error) {
+      if (markdownBody) {
+        markdownBody.innerHTML = `<div style="color: #fca5a5;">❌ Error regenerating response. Please try again.</div>`;
+      }
+    }
+
+    btn.classList.remove("regenerating");
+    btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg> Regenerate`;
+  });
+
+  actionsRow.appendChild(btn);
+}
+
+// ─── Like / Dislike Feedback Buttons ──────────────────────────────────────
+
+function addFeedbackButtons(aiContent) {
+  if (aiContent.querySelector(".feedback-btn-group")) return;
+
+  const group = document.createElement("div");
+  group.className = "feedback-btn-group";
+
+  // Like button
+  const likeBtn = document.createElement("button");
+  likeBtn.className = "feedback-btn like-btn";
+  likeBtn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path></svg>`;
+  likeBtn.title = "Like";
+
+  // Dislike button
+  const dislikeBtn = document.createElement("button");
+  dislikeBtn.className = "feedback-btn dislike-btn";
+  dislikeBtn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3H10zM17 2h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"></path></svg>`;
+  dislikeBtn.title = "Dislike";
+
+  // Helper to send feedback to the backend
+  function sendFeedback(feedbackType) {
+    // Find the parent AI message wrapper to get the chat_sa_id
+    const aiMsgWrapper = aiContent.closest(".ai-message-wrapper");
+    const chatSaId = aiMsgWrapper ? aiMsgWrapper.dataset.chatSaId : null;
+
+    if (!chatSaId) {
+      console.warn("No chat_sa_id found for feedback. Chat may not have been saved yet.");
+      return;
+    }
+
+    fetch("/feedback", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        chat_id: parseInt(chatSaId),
+        feedback_type: feedbackType
+      })
+    }).then(res => res.json()).then(data => {
+      if (!data.success) {
+        console.warn("Feedback API returned error:", data.error);
+      }
+    }).catch(err => console.error("Failed to submit feedback:", err));
+  }
+
+  likeBtn.addEventListener("click", () => {
+    const wasLiked = likeBtn.classList.contains("active");
+    // Toggle: if already liked, un-like; otherwise like and remove dislike
+    likeBtn.classList.toggle("active", !wasLiked);
+    dislikeBtn.classList.remove("active");
+
+    // Send feedback to backend
+    if (!wasLiked) {
+      sendFeedback("like");
+    } else {
+      sendFeedback("none");
+    }
+  });
+
+  dislikeBtn.addEventListener("click", () => {
+    const wasDisliked = dislikeBtn.classList.contains("active");
+    // Toggle: if already disliked, un-dislike; otherwise dislike and remove like
+    dislikeBtn.classList.toggle("active", !wasDisliked);
+    likeBtn.classList.remove("active");
+
+    // Send feedback to backend
+    if (!wasDisliked) {
+      sendFeedback("dislike");
+    } else {
+      sendFeedback("none");
+    }
+  });
+
+  group.appendChild(likeBtn);
+  group.appendChild(dislikeBtn);
+  aiContent.appendChild(group);
+}
+
+// ─── Add Action Buttons Row (Copy, Regenerate, Feedback) ──────────────────
+
+function addActionButtons(aiMsgDiv, userMessageText) {
+  const aiContent = aiMsgDiv.querySelector(".ai-content");
+  if (!aiContent) return;
+
+  // Create actions row if it doesn't exist
+  let actionsRow = aiContent.querySelector(".ai-actions");
+  if (!actionsRow) {
+    actionsRow = document.createElement("div");
+    actionsRow.className = "ai-actions";
+    aiContent.appendChild(actionsRow);
+  }
+
+  // Add copy button
+  addResponseCopyButton(aiContent);
+
+  // Add regenerate button
+  addRegenerateButton(aiMsgDiv, userMessageText);
+
+  // Add feedback buttons
+  addFeedbackButtons(aiContent);
 }
 
 // ─── Auto-resize Textarea ─────────────────────────────────────────────────
@@ -176,6 +342,9 @@ form.addEventListener("submit", async function (e) {
   const message = input.value.trim();
   if (message === "" || isSending) return;
   isSending = true;
+
+  // Store the last user message for regenerate
+  lastUserMessage = message;
 
   // Disable input while waiting
   input.disabled = true;
@@ -261,9 +430,8 @@ form.addEventListener("submit", async function (e) {
       scrollToBottom();
     }
 
-    // Add copy button to the response
-    const aiContent = aiMsgDiv.querySelector(".ai-content");
-    addResponseCopyButton(aiContent);
+    // Add action buttons (copy, regenerate, feedback)
+    addActionButtons(aiMsgDiv, message);
 
     // Add code copy buttons
     addCodeCopyButtons();
@@ -275,12 +443,26 @@ form.addEventListener("submit", async function (e) {
       });
     }
 
+    // Save conversation to SQLAlchemy database for admin dashboard
+    // This stores the user message + AI response pair in the ChatSA model
+    fetch("/save_chat_sa", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        user_message: message,
+        ai_response: fullReply
+      })
+    }).then(res => res.json()).then(data => {
+      if (data.success && data.chat_id) {
+        // Store the chat_sa_id on the AI message div for feedback
+        aiMsgDiv.dataset.chatSaId = data.chat_id;
+      }
+    }).catch(err => console.error("Failed to save chat for admin:", err));
+
   } catch (error) {
-    // Remove typing indicator if still present
     const thinkingEl = document.getElementById("thinking");
     if (thinkingEl) thinkingEl.remove();
 
-    // Show error message
     const errorDiv = document.createElement("div");
     errorDiv.className = "message ai-message-wrapper";
     errorDiv.innerHTML = `
@@ -317,6 +499,7 @@ newChatButton.addEventListener("click", async () => {
       input.value = "";
       input.style.height = "52px";
       input.focus();
+      lastUserMessage = "";
     }
   } catch (error) {
     console.error("Failed to create new chat:", error);
@@ -338,12 +521,10 @@ menuToggle.addEventListener("click", () => toggleSidebar());
 
 sidebarOverlay.addEventListener("click", () => toggleSidebar(false));
 
-// Close sidebar on Escape key
 document.addEventListener("keydown", (event) => {
   if (event.key === "Escape") toggleSidebar(false);
 });
 
-// Close sidebar on window resize above tablet
 window.addEventListener("resize", () => {
   if (window.innerWidth > 1024) toggleSidebar(false);
 });
@@ -372,13 +553,12 @@ function loadChat(chatId) {
               </div>
             `;
             chatBox.appendChild(div);
-            // Add copy button
+            // Add copy button only (no regenerate/feedback for history)
             const aiContent = div.querySelector(".ai-content");
             addResponseCopyButton(aiContent);
           }
         });
 
-        // Update title
         if (data.title) {
           document.querySelector("header h1").textContent = data.title;
         }
@@ -395,7 +575,6 @@ chatList?.querySelectorAll(".history-item").forEach((item) => {
     const chatId = this.dataset.chatId;
     if (chatId) {
       loadChat(chatId);
-      // Update active state
       document.querySelectorAll(".history-item").forEach((el) => el.classList.remove("active"));
       this.classList.add("active");
     }
@@ -408,7 +587,6 @@ chatList?.querySelectorAll(".history-item").forEach((item) => {
       const chatId = item.dataset.chatId;
       if (chatId) {
         loadChat(chatId);
-        // Update active state
         document.querySelectorAll(".history-item").forEach((el) => el.classList.remove("active"));
         item.classList.add("active");
       }
@@ -420,13 +598,11 @@ chatList?.querySelectorAll(".history-item").forEach((item) => {
 // ─── Initialize - DOM Ready ──────────────────────────────────────────────
 
 document.addEventListener("DOMContentLoaded", () => {
-  // Auto-resize textarea initially
   if (input) {
     input.style.height = "auto";
     input.style.height = Math.min(input.scrollHeight, 180) + "px";
   }
 
-  // Focus input
   input?.focus();
 
   // Render server-side markdown content from data-raw-content attributes
@@ -444,7 +620,6 @@ document.addEventListener("DOMContentLoaded", () => {
   });
   addCodeCopyButtons();
 
-  // Highlight any code blocks in server-rendered content
   if (typeof hljs !== 'undefined') {
     document.querySelectorAll('.markdown-body pre code').forEach((block) => {
       hljs.highlightElement(block);

@@ -1,0 +1,241 @@
+{# 
+  dashboard.html — Admin Dashboard with Charts
+  =============================================
+  Extends base.html.
+  Displays live statistics and Chart.js visualizations.
+#}
+{% extends "admin/base.html" %}
+
+{% block content %}
+<div class="admin-page-header">
+  <h1>Dashboard</h1>
+  <p class="admin-page-subtitle">Welcome to the Shani GPT admin panel.</p>
+</div>
+
+{# Statistics Cards #}
+<div class="admin-cards-grid">
+  <div class="admin-card">
+    <div class="admin-card-icon users">
+      <i class="fas fa-users"></i>
+    </div>
+    <div class="admin-card-body">
+      <h3>Total Users</h3>
+      <p class="admin-card-value">{{ stats.total_users }}</p>
+      <p class="admin-card-label">{{ stats.new_this_week }} new this week</p>
+    </div>
+  </div>
+
+  <div class="admin-card">
+    <div class="admin-card-icon chats">
+      <i class="fas fa-comments"></i>
+    </div>
+    <div class="admin-card-body">
+      <h3>Total Chats</h3>
+      <p class="admin-card-value">{{ stats.total_chats }}</p>
+      <p class="admin-card-label">{{ stats.chats_this_week }} this week</p>
+    </div>
+  </div>
+
+  <div class="admin-card">
+    <div class="admin-card-icon feedback">
+      <i class="fas fa-thumbs-up"></i>
+    </div>
+    <div class="admin-card-body">
+      <h3>Likes</h3>
+      <p class="admin-card-value">{{ stats.total_likes }}</p>
+      <p class="admin-card-label">{{ stats.like_ratio }}% positive</p>
+    </div>
+  </div>
+
+  <div class="admin-card">
+    <div class="admin-card-icon analytics">
+      <i class="fas fa-thumbs-down"></i>
+    </div>
+    <div class="admin-card-body">
+      <h3>Dislikes</h3>
+      <p class="admin-card-value">{{ stats.total_dislikes }}</p>
+      <p class="admin-card-label">{{ stats.dislike_ratio }}% negative</p>
+    </div>
+  </div>
+</div>
+
+{# Charts Section #}
+<div class="admin-charts-grid">
+  {# Daily Chats Chart #}
+  <div class="admin-chart-card">
+    <h3>Daily Chats (Last 30 Days)</h3>
+    <canvas id="dailyChatsChart"></canvas>
+  </div>
+
+  {# Daily New Users Chart #}
+  <div class="admin-chart-card">
+    <h3>Daily New Users</h3>
+    <canvas id="dailyUsersChart"></canvas>
+  </div>
+
+  {# Likes vs Dislikes Chart #}
+  <div class="admin-chart-card">
+    <h3>Likes vs Dislikes</h3>
+    <canvas id="feedbackChart"></canvas>
+  </div>
+
+  {# Chats Per Hour Chart #}
+  <div class="admin-chart-card">
+    <h3>Chats Per Hour</h3>
+    <canvas id="chatsPerHourChart"></canvas>
+  </div>
+</div>
+
+{# Top Active Users #}
+<div class="admin-section">
+  <h2>Top Active Users</h2>
+  <div class="admin-table-container">
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>Username</th>
+          <th>Chats</th>
+          <th>Feedback</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for user in chart_data.top_users %}
+        <tr>
+          <td>{{ user.username }}</td>
+          <td>{{ user.chats }}</td>
+          <td>{{ user.feedback }}</td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="3" class="admin-table-empty">No data yet</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{# Chart.js Scripts #}
+<script>
+  // Prepare data from backend
+  const dailyChatsData = {{ chart_data.daily_chats | tojson }};
+  const dailyUsersData = {{ chart_data.daily_users | tojson }};
+  const feedbackChartData = {{ chart_data.daily_feedback | tojson }};
+  const chatsPerHourData = {{ chart_data.chats_per_hour | tojson }};
+
+  // Common chart options
+  Chart.defaults.color = '#94a3b8';
+  Chart.defaults.borderColor = '#1f2937';
+  Chart.defaults.font.family = "'Segoe UI', -apple-system, BlinkMacSystemFont, Arial, sans-serif";
+
+  // Daily Chats Chart
+  new Chart(document.getElementById('dailyChatsChart'), {
+    type: 'line',
+    data: {
+      labels: dailyChatsData.map(d => d.date),
+      datasets: [{
+        label: 'Chats',
+        data: dailyChatsData.map(d => d.count),
+        borderColor: '#2563eb',
+        backgroundColor: 'rgba(37, 99, 235, 0.1)',
+        tension: 0.4,
+        fill: true
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { beginAtZero: true, ticks: { stepSize: 1 } },
+        x: { ticks: { maxRotation: 45, minRotation: 45 } }
+      }
+    }
+  });
+
+  // Daily New Users Chart
+  new Chart(document.getElementById('dailyUsersChart'), {
+    type: 'bar',
+    data: {
+      labels: dailyUsersData.map(d => d.date),
+      datasets: [{
+        label: 'New Users',
+        data: dailyUsersData.map(d => d.count),
+        backgroundColor: '#34d399',
+        borderRadius: 4
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { beginAtZero: true, ticks: { stepSize: 1 } },
+        x: { ticks: { maxRotation: 45, minRotation: 45 } }
+      }
+    }
+  });
+
+  // Likes vs Dislikes Chart
+  const likesData = feedbackChartData.filter(d => d.type === 'like');
+  const dislikesData = feedbackChartData.filter(d => d.type === 'dislike');
+  const allDates = [...new Set([...feedbackChartData.map(d => d.date)])].sort();
+
+  new Chart(document.getElementById('feedbackChart'), {
+    type: 'bar',
+    data: {
+      labels: allDates,
+      datasets: [
+        {
+          label: 'Likes',
+          data: allDates.map(date => {
+            const found = likesData.find(d => d.date === date);
+            return found ? found.count : 0;
+          }),
+          backgroundColor: '#34d399',
+          borderRadius: 4
+        },
+        {
+          label: 'Dislikes',
+          data: allDates.map(date => {
+            const found = dislikesData.find(d => d.date === date);
+            return found ? found.count : 0;
+          }),
+          backgroundColor: '#fca5a5',
+          borderRadius: 4
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      scales: {
+        y: { beginAtZero: true, ticks: { stepSize: 1 } },
+        x: { ticks: { maxRotation: 45, minRotation: 45 } }
+      }
+    }
+  });
+
+  // Chats Per Hour Chart
+  new Chart(document.getElementById('chatsPerHourChart'), {
+    type: 'bar',
+    data: {
+      labels: chatsPerHourData.map(d => d.hour + ':00'),
+      datasets: [{
+        label: 'Chats',
+        data: chatsPerHourData.map(d => d.count),
+        backgroundColor: '#a78bfa',
+        borderRadius: 4
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { beginAtZero: true, ticks: { stepSize: 1 } }
+      }
+    }
+  });
+</script>
+{% endblock %}

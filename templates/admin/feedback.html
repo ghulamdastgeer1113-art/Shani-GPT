@@ -1,0 +1,114 @@
+{# 
+  feedback.html — Admin Feedback Overview
+  =========================================
+  Displays feedback statistics and recent feedback list.
+#}
+{% extends "admin/base.html" %}
+
+{% block content %}
+<div class="admin-page-header">
+  <h1>Feedback</h1>
+  <p class="admin-page-subtitle">View user feedback on AI responses.</p>
+</div>
+
+{# Statistics Cards #}
+<div class="admin-cards-grid">
+  <div class="admin-card">
+    <div class="admin-card-icon feedback">
+      <i class="fas fa-thumbs-up"></i>
+    </div>
+    <div class="admin-card-body">
+      <h3>Total Likes</h3>
+      <p class="admin-card-value">{{ total_likes }}</p>
+      <p class="admin-card-label">{{ like_percentage }}% of total</p>
+    </div>
+  </div>
+
+  <div class="admin-card">
+    <div class="admin-card-icon chats">
+      <i class="fas fa-thumbs-down"></i>
+    </div>
+    <div class="admin-card-body">
+      <h3>Total Dislikes</h3>
+      <p class="admin-card-value">{{ total_dislikes }}</p>
+      <p class="admin-card-label">{{ dislike_percentage }}% of total</p>
+    </div>
+  </div>
+</div>
+
+{# Recent Feedback #}
+<div class="admin-table-container">
+  {# Search #}
+  <form method="GET" class="admin-search-form">
+    <input type="text" name="search" value="{{ search_query }}" placeholder="Search by username..." class="admin-search-input" />
+    <button type="submit" class="admin-search-btn">
+      <i class="fas fa-search"></i>
+    </button>
+  </form>
+
+  {# Feedback Table #}
+  <table class="admin-table">
+    <thead>
+      <tr>
+        <th>Username</th>
+        <th>Prompt</th>
+        <th>Feedback Type</th>
+        <th>Date</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in feedbacks_data %}
+      <tr class="admin-table-row-clickable">
+        <td>
+          <a href="{{ url_for('admin.user_profile', user_id=item.user.id) }}" class="admin-link">
+            {{ item.user.username }}
+          </a>
+        </td>
+        <td class="admin-text-truncate" title="{{ item.chat.user_message }}">
+          {{ item.chat.user_message[:80] }}{% if item.chat.user_message|length > 80 %}...{% endif %}
+        </td>
+        <td>
+          {% if item.feedback.feedback_type == 'like' %}
+            <span class="admin-feedback-badge like"><i class="fas fa-thumbs-up"></i> Like</span>
+          {% elif item.feedback.feedback_type == 'dislike' %}
+            <span class="admin-feedback-badge dislike"><i class="fas fa-thumbs-down"></i> Dislike</span>
+          {% endif %}
+        </td>
+        <td>{{ item.feedback.created_at.strftime('%Y-%m-%d %H:%M') if item.feedback.created_at else 'N/A' }}</td>
+      </tr>
+      {% else %}
+      <tr>
+        <td colspan="4" class="admin-table-empty">
+          {% if search_query %}
+            No feedback found matching "{{ search_query }}"
+          {% else %}
+            No feedback yet
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  {# Pagination #}
+  {% if pagination.pages > 1 %}
+  <div class="admin-pagination">
+    {% if pagination.has_prev %}
+      <a href="{{ url_for('admin.feedback', page=pagination.prev_num, search=search_query) }}" class="admin-pagination-btn">
+        <i class="fas fa-chevron-left"></i> Previous
+      </a>
+    {% endif %}
+
+    <span class="admin-pagination-info">
+      Page {{ pagination.page }} of {{ pagination.pages }}
+    </span>
+
+    {% if pagination.has_next %}
+      <a href="{{ url_for('admin.feedback', page=pagination.next_num, search=search_query) }}" class="admin-pagination-btn">
+        Next <i class="fas fa-chevron-right"></i>
+      </a>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,149 @@
+{# 
+  base.html — Admin Panel Base Layout
+  =====================================
+  This is the parent template for all admin pages.
+  It provides:
+  - Collapsible left sidebar with navigation
+  - Top navigation bar with admin info
+  - Content area for child templates
+  - Responsive design using the existing colour palette
+#}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin — Shani GPT</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+  <link rel="stylesheet" href="{{ url_for('admin.static', filename='admin.css') }}" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body class="admin-body">
+  <div class="admin-app">
+    {# ─── Sidebar ─────────────────────────────────────────── #}
+    <aside class="admin-sidebar" id="admin-sidebar">
+      <div class="admin-sidebar-header">
+        <div class="admin-logo">
+          <span>Shani</span> GPT
+          <span class="admin-badge">Admin</span>
+        </div>
+      </div>
+
+      <nav class="admin-nav">
+        <a href="{{ url_for('admin.dashboard') }}" class="admin-nav-item {{ 'active' if active_page == 'dashboard' else '' }}">
+          <i class="fas fa-th-large"></i>
+          <span>Dashboard</span>
+        </a>
+        <a href="{{ url_for('admin.users') }}" class="admin-nav-item {{ 'active' if active_page == 'users' else '' }}">
+          <i class="fas fa-users"></i>
+          <span>Users</span>
+        </a>
+        <a href="{{ url_for('admin.chats') }}" class="admin-nav-item {{ 'active' if active_page == 'chats' else '' }}">
+          <i class="fas fa-comments"></i>
+          <span>Chats</span>
+        </a>
+        <a href="{{ url_for('admin.feedback') }}" class="admin-nav-item {{ 'active' if active_page == 'feedback' else '' }}">
+          <i class="fas fa-star"></i>
+          <span>Feedback</span>
+        </a>
+        <a href="{{ url_for('admin.analytics') }}" class="admin-nav-item {{ 'active' if active_page == 'analytics' else '' }}">
+          <i class="fas fa-chart-line"></i>
+          <span>Analytics</span>
+        </a>
+        <a href="{{ url_for('admin.settings') }}" class="admin-nav-item {{ 'active' if active_page == 'settings' else '' }}">
+          <i class="fas fa-cog"></i>
+          <span>Settings</span>
+        </a>
+      </nav>
+
+      <div class="admin-sidebar-footer">
+        <a href="{{ url_for('index') }}" class="admin-nav-item">
+          <i class="fas fa-arrow-left"></i>
+          <span>Back to App</span>
+        </a>
+        <a href="{{ url_for('logout') }}" class="admin-nav-item">
+          <i class="fas fa-sign-out-alt"></i>
+          <span>Logout</span>
+        </a>
+      </div>
+    </aside>
+
+    {# ─── Sidebar Overlay (mobile) ────────────────────────── #}
+    <div class="admin-overlay" id="admin-overlay"></div>
+
+    {# ─── Main Content Area ───────────────────────────────── #}
+    <div class="admin-main">
+      {# ─── Top Bar ───────────────────────────────────────── #}
+      <header class="admin-topbar">
+        <button class="admin-menu-toggle" id="admin-menu-toggle" type="button" aria-label="Toggle sidebar">
+          <i class="fas fa-bars"></i>
+        </button>
+
+        <div class="admin-breadcrumb">
+          <span>Admin</span>
+          {% if active_page != 'dashboard' %}
+          <span class="admin-breadcrumb-sep"><i class="fas fa-chevron-right"></i></span>
+          <span class="admin-breadcrumb-current">{{ active_page | capitalize }}</span>
+          {% endif %}
+        </div>
+
+        <div class="admin-topbar-right">
+          <div class="admin-topbar-time" id="admin-current-time"></div>
+          <div class="admin-user-info">
+            <div class="admin-avatar">{{ admin_user.username[0] | upper if admin_user else 'A' }}</div>
+            <div class="admin-user-details">
+              <div class="admin-user-name">{{ admin_user.username if admin_user else 'Admin' }}</div>
+              <div class="admin-user-role">Administrator</div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {# ─── Page Content ──────────────────────────────────── #}
+      <main class="admin-content">
+        {% block content %}{% endblock %}
+      </main>
+    </div>
+  </div>
+
+  <script>
+    // ─── Sidebar Toggle ─────────────────────────────────────
+    const sidebar = document.getElementById("admin-sidebar");
+    const overlay = document.getElementById("admin-overlay");
+    const toggleBtn = document.getElementById("admin-menu-toggle");
+
+    function toggleAdminSidebar(force) {
+      const shouldOpen = typeof force === "boolean" ? force : !sidebar.classList.contains("open");
+      sidebar.classList.toggle("open", shouldOpen);
+      overlay.classList.toggle("active", shouldOpen);
+    }
+
+    toggleBtn.addEventListener("click", () => toggleAdminSidebar());
+    overlay.addEventListener("click", () => toggleAdminSidebar(false));
+
+    // Close sidebar on Escape
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") toggleAdminSidebar(false);
+    });
+
+    // Close sidebar on large screens
+    window.addEventListener("resize", () => {
+      if (window.innerWidth > 1024) toggleAdminSidebar(false);
+    });
+
+    // ─── Live Clock ─────────────────────────────────────────
+    function updateClock() {
+      const now = new Date();
+      const options = { 
+        weekday: 'short', year: 'numeric', month: 'short', day: 'numeric',
+        hour: '2-digit', minute: '2-digit'
+      };
+      const el = document.getElementById("admin-current-time");
+      if (el) el.textContent = now.toLocaleDateString('en-US', options);
+    }
+    updateClock();
+    setInterval(updateClock, 30000);
+  </script>
+</body>
+</html>

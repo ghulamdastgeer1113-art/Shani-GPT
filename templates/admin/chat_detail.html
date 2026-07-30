@@ -1,0 +1,62 @@
+{# 
+  chat_detail.html — Admin Chat Detail
+  ======================================
+  Displays full details of a single chat.
+#}
+{% extends "admin/base.html" %}
+
+{% block content %}
+<div class="admin-page-header">
+  <a href="{{ url_for('admin.chats') }}" class="admin-back-link">
+    <i class="fas fa-arrow-left"></i> Back to Chats
+  </a>
+  <h1>Chat Detail</h1>
+  <p class="admin-page-subtitle">Chat ID: {{ chat.id }}</p>
+</div>
+
+<div class="admin-chat-detail">
+  {# Chat Info #}
+  <div class="admin-chat-meta">
+    <div class="admin-chat-meta-item">
+      <span class="admin-chat-meta-label">User</span>
+      <span class="admin-chat-meta-value">
+        <a href="{{ url_for('admin.user_profile', user_id=user.id) }}" class="admin-link">{{ user.username if user else 'Unknown' }}</a>
+      </span>
+    </div>
+    <div class="admin-chat-meta-item">
+      <span class="admin-chat-meta-label">Timestamp</span>
+      <span class="admin-chat-meta-value">{{ chat.created_at.strftime('%Y-%m-%d %H:%M:%S') if chat.created_at else 'N/A' }}</span>
+    </div>
+    <div class="admin-chat-meta-item">
+      <span class="admin-chat-meta-label">Feedback</span>
+      <span class="admin-chat-meta-value">
+        {% if feedback %}
+          {% if feedback.feedback_type == 'like' %}
+            <span class="admin-feedback-badge like"><i class="fas fa-thumbs-up"></i> Like</span>
+          {% elif feedback.feedback_type == 'dislike' %}
+            <span class="admin-feedback-badge dislike"><i class="fas fa-thumbs-down"></i> Dislike</span>
+          {% endif %}
+        {% else %}
+          <span class="admin-feedback-none">No feedback</span>
+        {% endif %}
+      </span>
+    </div>
+  </div>
+
+  {# User Message #}
+  <div class="admin-chat-section">
+    <h3>User Prompt</h3>
+    <div class="admin-chat-content user-message">
+      {{ chat.user_message }}
+    </div>
+  </div>
+
+  {# AI Response #}
+  <div class="admin-chat-section">
+    <h3>AI Response</h3>
+    <div class="admin-chat-content ai-message">
+      {{ chat.ai_response }}
+    </div>
+  </div>
+</div>
+{% endblock %}
