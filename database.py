@@ -118,10 +118,10 @@ def get_all_chats(user_id):
     """Return all chat records belonging to a specific user, ordered by most recent."""
     connection = get_connection()
     cursor = connection.cursor()
-    cursor.execute("SELECT id, title FROM chats WHERE user_id = ? ORDER BY id DESC", (user_id,))
+    cursor.execute("SELECT id, title, created_at FROM chats WHERE user_id = ? ORDER BY id DESC", (user_id,))
     chats = cursor.fetchall()
     connection.close()
-    return [{"id": row[0], "title": row[1]} for row in chats]
+    return [{"id": row[0], "title": row[1], "created_at": row[2]} for row in chats]
 
 
 def get_chat_owner(chat_id):

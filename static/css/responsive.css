@@ -97,11 +97,65 @@
   }
 }
 
+/* Tablet and below - suggestion cards */
+@media (max-width: 768px) {
+  .suggestion-cards {
+    grid-template-columns: repeat(2, 1fr);
+    max-width: 480px;
+  }
+
+  .suggestion-card {
+    padding: 14px 10px;
+  }
+
+  .suggestion-icon {
+    font-size: 20px;
+  }
+
+  .suggestion-text {
+    font-size: 12px;
+  }
+}
+
 /* Small mobile */
 @media (max-width: 480px) {
+  .suggestion-cards {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    max-width: 360px;
+  }
+
+  .suggestion-card {
+    padding: 12px 8px;
+  }
+
   .sidebar {
     width: 100%;
     max-width: 100%;
+  }
+
+  .history-search {
+    height: 32px;
+    font-size: 12px;
+  }
+
+  .history-item {
+    padding: 8px 10px;
+    font-size: 12px;
+  }
+
+  .history-action-btn {
+    width: 24px;
+    height: 24px;
+    min-width: 24px;
+  }
+
+  .sidebar-collapse-btn {
+    bottom: 12px;
+    right: 12px;
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
   }
 
   .message-content {

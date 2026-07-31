@@ -470,3 +470,44 @@
 .logout-btn:active {
   transform: scale(0.92);
 }
+
+/* Logout button wrapper with tooltip */
+.logout-btn-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.logout-tooltip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  background: #1e293b;
+  color: #e2e8f0;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid #334155;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.logout-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-top-color: #334155;
+}
+
+.logout-btn-wrapper:hover .logout-tooltip {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}

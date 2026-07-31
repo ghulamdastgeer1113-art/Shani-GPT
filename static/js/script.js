@@ -482,6 +482,22 @@ form.addEventListener("submit", async function (e) {
   input.focus();
 });
 
+// ─── Suggestion Cards ──────────────────────────────────────────────────────
+
+function attachSuggestionCardListeners() {
+  document.querySelectorAll(".suggestion-card").forEach((card) => {
+    card.addEventListener("click", function () {
+      const prompt = this.getAttribute("data-prompt");
+      if (prompt) {
+        input.value = prompt;
+        input.style.height = "auto";
+        input.style.height = Math.min(input.scrollHeight, 180) + "px";
+        input.focus();
+      }
+    });
+  });
+}
+
 // ─── New Chat ─────────────────────────────────────────────────────────────
 
 newChatButton.addEventListener("click", async () => {
@@ -492,14 +508,40 @@ newChatButton.addEventListener("click", async () => {
     if (data.success || data.chat_id) {
       chatBox.innerHTML = `
         <div class="welcome">
-          <h2>Welcome to Shani GPT</h2>
-          <p>Start a new conversation by asking a question.</p>
+          <h2>What can I help with today?</h2>
+          <div class="suggestion-cards">
+            <button class="suggestion-card" data-prompt="Summarize a document or article for me">
+              <span class="suggestion-icon">📄</span>
+              <span class="suggestion-text">Summarize a document</span>
+            </button>
+            <button class="suggestion-card" data-prompt="Write a Python function that calculates the Fibonacci sequence">
+              <span class="suggestion-icon">💻</span>
+              <span class="suggestion-text">Write code</span>
+            </button>
+            <button class="suggestion-card" data-prompt="Help me brainstorm creative ideas for">
+              <span class="suggestion-icon">💡</span>
+              <span class="suggestion-text">Brainstorm ideas</span>
+            </button>
+            <button class="suggestion-card" data-prompt="Explain the concept of quantum computing in simple terms">
+              <span class="suggestion-icon">🔬</span>
+              <span class="suggestion-text">Explain a concept</span>
+            </button>
+            <button class="suggestion-card" data-prompt="Write a professional email about">
+              <span class="suggestion-icon">✉️</span>
+              <span class="suggestion-text">Draft an email</span>
+            </button>
+            <button class="suggestion-card" data-prompt="Create a study plan for learning">
+              <span class="suggestion-icon">📚</span>
+              <span class="suggestion-text">Create a study plan</span>
+            </button>
+          </div>
         </div>
       `;
       input.value = "";
       input.style.height = "52px";
       input.focus();
       lastUserMessage = "";
+      attachSuggestionCardListeners();
     }
   } catch (error) {
     console.error("Failed to create new chat:", error);
@@ -529,7 +571,319 @@ window.addEventListener("resize", () => {
   if (window.innerWidth > 1024) toggleSidebar(false);
 });
 
+// ─── Date Grouping ─────────────────────────────────────────────────────────
+
+function getDateLabel(dateStr) {
+  if (!dateStr) return "Older";
+  const date = new Date(dateStr);
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const weekAgo = new Date(today);
+  weekAgo.setDate(weekAgo.getDate() - 7);
+
+  if (date >= today) return "Today";
+  if (date >= yesterday) return "Yesterday";
+  if (date >= weekAgo) return "Previous 7 Days";
+  return "Older";
+}
+
+function groupChatsByDate(chats) {
+  const groups = {};
+  chats.forEach((chat) => {
+    const label = getDateLabel(chat.created_at);
+    if (!groups[label]) groups[label] = [];
+    groups[label].push(chat);
+  });
+  return groups;
+}
+
+function renderChatList(chats) {
+  const chatListEl = document.getElementById("chat-list");
+  if (!chatListEl) return;
+
+  const order = ["Today", "Yesterday", "Previous 7 Days", "Older"];
+  const grouped = groupChatsByDate(chats);
+  const currentChatId = document.querySelector(".history-item.active")?.dataset.chatId;
+
+  let html = "";
+  order.forEach((label) => {
+    if (grouped[label] && grouped[label].length > 0) {
+      html += `<div class="date-group"><div class="date-label">${label}</div>`;
+      grouped[label].forEach((chat) => {
+        const activeClass = chat.id.toString() === currentChatId ? "active" : "";
+        html += `
+          <div class="history-item ${activeClass}" data-chat-id="${chat.id}" data-created-at="${chat.created_at || ""}" role="button" tabindex="0" aria-pressed="false">
+            <span class="history-item-title">${escapeHtml(chat.title)}</span>
+            <div class="history-item-actions">
+              <button class="history-action-btn rename-btn" data-chat-id="${chat.id}" title="Rename">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+              </button>
+              <button class="history-action-btn delete-btn" data-chat-id="${chat.id}" title="Delete">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+              </button>
+            </div>
+          </div>
+        `;
+      });
+      html += "</div>";
+    }
+  });
+
+  chatListEl.innerHTML = html;
+  attachChatItemListeners();
+}
+
+// ─── Search Chats ─────────────────────────────────────────────────────────
+
+function initChatSearch() {
+  const searchInput = document.getElementById("history-search");
+  if (!searchInput) return;
+
+  let debounceTimer;
+  searchInput.addEventListener("input", () => {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => {
+      const query = searchInput.value.trim();
+      if (!query) {
+        renderChatList(window.__allChats || []);
+        return;
+      }
+      fetch(`/search_chats?q=${encodeURIComponent(query)}`)
+        .then((res) => res.json())
+        .then((results) => {
+          renderChatList(results);
+        })
+        .catch((err) => console.error("Search failed:", err));
+    }, 250);
+  });
+}
+
+// ─── Rename Chat (Inline Edit) ─────────────────────────────────────────────
+
+function handleRenameClick(e, renameBtn) {
+  e.stopPropagation();
+  e.preventDefault();
+
+  const chatId = renameBtn.dataset.chatId;
+  const historyItem = renameBtn.closest(".history-item");
+  const titleEl = historyItem?.querySelector(".history-item-title");
+  if (!chatId || !titleEl) return;
+
+  const currentTitle = titleEl.textContent.trim();
+
+  // Replace title text with an inline input
+  const input = document.createElement("input");
+  input.type = "text";
+  input.className = "rename-input";
+  input.value = currentTitle;
+  input.setAttribute("maxlength", "60");
+
+  // Replace the title span with the input
+  titleEl.replaceWith(input);
+  input.focus();
+  input.select();
+
+  let saved = false;
+
+  function saveRename() {
+    if (saved) return;
+    saved = true;
+    const trimmed = input.value.trim();
+    if (!trimmed || trimmed === currentTitle) {
+      // No change — restore original title
+      const span = document.createElement("span");
+      span.className = "history-item-title";
+      span.textContent = currentTitle;
+      input.replaceWith(span);
+      return;
+    }
+
+    fetch("/rename_chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ chat_id: parseInt(chatId), title: trimmed })
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        const span = document.createElement("span");
+        span.className = "history-item-title";
+        span.textContent = data.success ? trimmed : currentTitle;
+        input.replaceWith(span);
+        // Update header if this is the active chat
+        if (data.success) {
+          const activeItem = document.querySelector(".history-item.active");
+          if (activeItem && activeItem.dataset.chatId === chatId) {
+            document.querySelector("header h1").textContent = trimmed;
+          }
+        }
+      })
+      .catch((err) => {
+        console.error("Rename failed:", err);
+        const span = document.createElement("span");
+        span.className = "history-item-title";
+        span.textContent = currentTitle;
+        input.replaceWith(span);
+      });
+  }
+
+  function cancelRename() {
+    if (saved) return;
+    saved = true;
+    const span = document.createElement("span");
+    span.className = "history-item-title";
+    span.textContent = currentTitle;
+    input.replaceWith(span);
+  }
+
+  // Save on Enter or blur
+  input.addEventListener("keydown", (ev) => {
+    if (ev.key === "Enter") {
+      ev.preventDefault();
+      saveRename();
+    } else if (ev.key === "Escape") {
+      ev.preventDefault();
+      cancelRename();
+    }
+  });
+
+  input.addEventListener("blur", saveRename);
+}
+
+// ─── Delete Chat ──────────────────────────────────────────────────────────
+
+function handleDeleteClick(e, deleteBtn) {
+  e.stopPropagation();
+  e.preventDefault();
+
+  const chatId = deleteBtn.dataset.chatId;
+  const historyItem = deleteBtn.closest(".history-item");
+  if (!chatId || !historyItem) return;
+
+  if (!confirm("Delete this chat? This cannot be undone.")) return;
+
+  fetch(`/delete_chat/${chatId}`, { method: "POST" })
+    .then((res) => res.json())
+    .then((data) => {
+      if (data.success || data.chat_id) {
+        historyItem.remove();
+        // If deleted chat was active, load the new active chat or show welcome
+        const activeItem = document.querySelector(".history-item.active");
+        if (!activeItem) {
+          if (data.chat_id) {
+            loadChat(data.chat_id);
+          } else {
+            chatBox.innerHTML = `
+              <div class="welcome">
+                <h2>What can I help with today?</h2>
+                <div class="suggestion-cards">
+                  <button class="suggestion-card" data-prompt="Summarize a document or article for me">
+                    <span class="suggestion-icon">📄</span>
+                    <span class="suggestion-text">Summarize a document</span>
+                  </button>
+                  <button class="suggestion-card" data-prompt="Write a Python function that calculates the Fibonacci sequence">
+                    <span class="suggestion-icon">💻</span>
+                    <span class="suggestion-text">Write code</span>
+                  </button>
+                  <button class="suggestion-card" data-prompt="Help me brainstorm creative ideas for">
+                    <span class="suggestion-icon">💡</span>
+                    <span class="suggestion-text">Brainstorm ideas</span>
+                  </button>
+                  <button class="suggestion-card" data-prompt="Explain the concept of quantum computing in simple terms">
+                    <span class="suggestion-icon">🔬</span>
+                    <span class="suggestion-text">Explain a concept</span>
+                  </button>
+                  <button class="suggestion-card" data-prompt="Write a professional email about">
+                    <span class="suggestion-icon">✉️</span>
+                    <span class="suggestion-text">Draft an email</span>
+                  </button>
+                  <button class="suggestion-card" data-prompt="Create a study plan for learning">
+                    <span class="suggestion-icon">📚</span>
+                    <span class="suggestion-text">Create a study plan</span>
+                  </button>
+                </div>
+              </div>
+            `;
+            attachSuggestionCardListeners();
+            document.querySelector("header h1").textContent = "Shani GPT";
+          }
+        }
+      }
+    })
+    .catch((err) => console.error("Delete failed:", err));
+}
+
+// ─── Refresh Chat List ────────────────────────────────────────────────────
+
+function refreshChatList() {
+  // Reload the page to refresh the chat list from server-side data
+  // This is simpler and avoids needing a dedicated API endpoint
+  window.location.reload();
+}
+
+// ─── Sidebar Collapse ─────────────────────────────────────────────────────
+
+function initSidebarCollapse() {
+  const collapseBtn = document.getElementById("sidebar-collapse-btn");
+  const sidebar = document.getElementById("sidebar");
+  if (!collapseBtn || !sidebar) return;
+
+  collapseBtn.addEventListener("click", () => {
+    const isCollapsed = sidebar.classList.toggle("collapsed");
+    collapseBtn.classList.toggle("collapsed", isCollapsed);
+    collapseBtn.title = isCollapsed ? "Expand sidebar" : "Collapse sidebar";
+  });
+}
+
 // ─── Load Chat History Items ──────────────────────────────────────────────
+
+function attachChatItemListeners() {
+  document.querySelectorAll(".history-item").forEach((item) => {
+    // Click handler for opening a chat
+    item.addEventListener("click", function (e) {
+      // Don't trigger if clicking action buttons
+      if (e.target.closest(".history-action-btn")) return;
+      const chatId = this.dataset.chatId;
+      if (chatId) {
+        loadChat(chatId);
+        document.querySelectorAll(".history-item").forEach((el) => el.classList.remove("active"));
+        this.classList.add("active");
+      }
+      toggleSidebar(false);
+    });
+
+    // Keyboard handler for accessibility
+    item.addEventListener("keydown", (event) => {
+      // Don't trigger shortcuts when typing in an input or textarea
+      if (event.target.tagName === "INPUT" || event.target.tagName === "TEXTAREA") return;
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        const chatId = item.dataset.chatId;
+        if (chatId) {
+          loadChat(chatId);
+          document.querySelectorAll(".history-item").forEach((el) => el.classList.remove("active"));
+          item.classList.add("active");
+        }
+        toggleSidebar(false);
+      }
+    });
+  });
+
+  // Attach rename button handlers
+  document.querySelectorAll(".rename-btn").forEach((btn) => {
+    btn.addEventListener("click", function (e) {
+      handleRenameClick(e, this);
+    });
+  });
+
+  // Attach delete button handlers
+  document.querySelectorAll(".delete-btn").forEach((btn) => {
+    btn.addEventListener("click", function (e) {
+      handleDeleteClick(e, this);
+    });
+  });
+}
 
 function loadChat(chatId) {
   fetch(`/load_chat/${chatId}`)
@@ -570,31 +924,6 @@ function loadChat(chatId) {
     .catch((error) => console.error("Failed to load chat:", error));
 }
 
-chatList?.querySelectorAll(".history-item").forEach((item) => {
-  item.addEventListener("click", function () {
-    const chatId = this.dataset.chatId;
-    if (chatId) {
-      loadChat(chatId);
-      document.querySelectorAll(".history-item").forEach((el) => el.classList.remove("active"));
-      this.classList.add("active");
-    }
-    toggleSidebar(false);
-  });
-
-  item.addEventListener("keydown", (event) => {
-    if (event.key === "Enter" || event.key === " ") {
-      event.preventDefault();
-      const chatId = item.dataset.chatId;
-      if (chatId) {
-        loadChat(chatId);
-        document.querySelectorAll(".history-item").forEach((el) => el.classList.remove("active"));
-        item.classList.add("active");
-      }
-      toggleSidebar(false);
-    }
-  });
-});
-
 // ─── Initialize - DOM Ready ──────────────────────────────────────────────
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -613,6 +942,17 @@ document.addEventListener("DOMContentLoaded", () => {
       el.removeAttribute("data-raw-content");
     }
   });
+
+  // Attach suggestion card click handlers
+  attachSuggestionCardListeners();
+
+  // Attach click handlers to initial server-rendered chat items
+  // (includes rename/delete button handlers)
+  attachChatItemListeners();
+
+  // Initialize sidebar features
+  initChatSearch();
+  initSidebarCollapse();
 
   // Add copy buttons to any existing AI messages from server-side rendering
   document.querySelectorAll(".ai-message-wrapper .ai-content").forEach((container) => {

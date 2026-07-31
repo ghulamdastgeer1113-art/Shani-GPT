@@ -16,6 +16,7 @@
     <aside class="sidebar" id="sidebar">
       <div class="logo">
         <span>Shani</span> GPT
+        <div class="tagline">Your intelligent AI assistant</div>
       </div>
 
       <button id="new-chat-btn" class="new-chat">+ New Chat</button>
@@ -27,17 +28,36 @@
           <div class="user-name">{{ user.name }}</div>
           <div class="user-email">{{ user.email }}</div>
         </div>
-        <a href="{{ url_for('logout') }}" class="logout-btn" title="Sign out">✕</a>
+        <div class="logout-btn-wrapper">
+          <a href="{{ url_for('logout') }}" class="logout-btn" title="Log out">✕</a>
+          <span class="logout-tooltip">Log out</span>
+        </div>
       </div>
       {% endif %}
 
       <div class="history-title">History</div>
+      <div class="history-search-wrapper">
+        <input type="text" id="history-search" class="history-search" placeholder="Search chats..." autocomplete="off" />
+      </div>
+      <button class="sidebar-collapse-btn" id="sidebar-collapse-btn" title="Collapse sidebar">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="11 17 6 12 11 7"/><polyline points="18 17 13 12 18 7"/></svg>
+      </button>
       <div class="history" id="chat-list">
-        {% for chat in chats %}
-        <div class="history-item {{ 'active' if chat.id == current_chat else '' }}" data-chat-id="{{ chat.id }}" role="button" tabindex="0" aria-pressed="false">
-          {{ chat.title }}
-        </div>
-        {% endfor %}
+        {% if chats %}
+          {% for chat in chats %}
+          <div class="history-item {{ 'active' if chat.id == current_chat else '' }}" data-chat-id="{{ chat.id }}" data-created-at="{{ chat.created_at }}" role="button" tabindex="0" aria-pressed="false">
+            <span class="history-item-title">{{ chat.title }}</span>
+            <div class="history-item-actions">
+              <button class="history-action-btn rename-btn" data-chat-id="{{ chat.id }}" title="Rename">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+              </button>
+              <button class="history-action-btn delete-btn" data-chat-id="{{ chat.id }}" title="Delete">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+              </button>
+            </div>
+          </div>
+          {% endfor %}
+        {% endif %}
       </div>
     </aside>
     <div class="sidebar-overlay" id="sidebar-overlay"></div>
@@ -66,8 +86,33 @@
           {% endfor %}
         {% else %}
         <div class="welcome">
-          <h2>Welcome to Shani GPT</h2>
-          <p>Start a new conversation by asking a question.</p>
+          <h2>What can I help with today?</h2>
+          <div class="suggestion-cards">
+            <button class="suggestion-card" data-prompt="Summarize a document or article for me">
+              <span class="suggestion-icon">📄</span>
+              <span class="suggestion-text">Summarize a document</span>
+            </button>
+            <button class="suggestion-card" data-prompt="Write a Python function that calculates the Fibonacci sequence">
+              <span class="suggestion-icon">💻</span>
+              <span class="suggestion-text">Write code</span>
+            </button>
+            <button class="suggestion-card" data-prompt="Help me brainstorm creative ideas for">
+              <span class="suggestion-icon">💡</span>
+              <span class="suggestion-text">Brainstorm ideas</span>
+            </button>
+            <button class="suggestion-card" data-prompt="Explain the concept of quantum computing in simple terms">
+              <span class="suggestion-icon">🔬</span>
+              <span class="suggestion-text">Explain a concept</span>
+            </button>
+            <button class="suggestion-card" data-prompt="Write a professional email about">
+              <span class="suggestion-icon">✉️</span>
+              <span class="suggestion-text">Draft an email</span>
+            </button>
+            <button class="suggestion-card" data-prompt="Create a study plan for learning">
+              <span class="suggestion-icon">📚</span>
+              <span class="suggestion-text">Create a study plan</span>
+            </button>
+          </div>
         </div>
         {% endif %}
       </section>
