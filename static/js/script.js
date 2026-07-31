@@ -954,6 +954,13 @@ document.addEventListener("DOMContentLoaded", () => {
   initChatSearch();
   initSidebarCollapse();
 
+  // Cache initial chat list for search restore
+  window.__allChats = Array.from(document.querySelectorAll(".history-item")).map((item) => ({
+    id: parseInt(item.dataset.chatId),
+    title: item.querySelector(".history-item-title")?.textContent || "",
+    created_at: item.dataset.createdAt || ""
+  }));
+
   // Add copy buttons to any existing AI messages from server-side rendering
   document.querySelectorAll(".ai-message-wrapper .ai-content").forEach((container) => {
     addResponseCopyButton(container);

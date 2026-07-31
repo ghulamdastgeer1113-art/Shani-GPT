@@ -172,11 +172,11 @@
   padding: 14px 16px;
   background: #1f2937;
   border: 1px solid #334155;
-  border-radius: 14px;
+  border-radius: 12px;
   color: #f8fafc;
   font-size: 16px;
   outline: none;
-  transition: border-color 0.25s ease, box-shadow 0.25s ease;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
   box-sizing: border-box;
 }
 
@@ -214,15 +214,15 @@
   height: 52px !important;
   min-width: auto !important;
   padding: 0 24px;
-  background: #2563eb;
+  background: #3b82f6;
   color: #fff;
   border: none;
-  border-radius: 14px !important;
+  border-radius: 12px !important;
   font-size: 16px;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.25s ease, transform 0.2s ease, box-shadow 0.25s ease;
-  box-shadow: 0 10px 22px rgba(37, 99, 235, 0.25);
+  transition: background 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
   margin-top: 8px;
   display: flex;
   align-items: center;
@@ -231,9 +231,9 @@
 }
 
 .auth-submit:hover {
-  background: #1d4ed8;
-  transform: translateY(-2px);
-  box-shadow: 0 14px 28px rgba(37, 99, 235, 0.3);
+  background: #2563eb;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.25);
 }
 
 .auth-submit:active {
@@ -401,9 +401,9 @@
   padding: 14px 18px;
   margin: 8px 14px 14px;
   background: #1f2937;
-  border-radius: 14px;
+  border-radius: 12px;
   border: 1px solid #334155;
-  transition: background 0.2s ease;
+  transition: background 0.18s ease;
 }
 
 .user-badge .user-avatar {
@@ -411,7 +411,7 @@
   height: 36px;
   min-width: 36px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #2563eb, #60a5fa);
+  background: linear-gradient(135deg, #3b82f6, #60a5fa);
   display: flex;
   align-items: center;
   justify-content: center;

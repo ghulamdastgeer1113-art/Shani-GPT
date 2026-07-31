@@ -1,7 +1,32 @@
 /* ===========================
    SHANI GPT - MAIN STYLES
    Professional AI Chat Interface
+   Design System v3.0
    =========================== */
+
+/* ================= DESIGN TOKENS ================= */
+/*
+   Accent: #3b82f6 (blue-500)
+   Accent Hover: #2563eb (blue-600)
+   Accent Light: #60a5fa (blue-400)
+   Bg Dark: #0f172a (slate-900)
+   Bg Sidebar: #111827 (gray-900)
+   Bg Card: #1e293b (slate-800)
+   Bg Input: #1f2937 (gray-800)
+   Border: #334155 (slate-700)
+   Border Hover: #475569 (slate-600)
+   Text Primary: #f8fafc (slate-50)
+   Text Secondary: #cbd5e1 (slate-300)
+   Text Muted: #94a3b8 (slate-400)
+   Radius Card: 12px
+   Radius Input: 10px
+   Radius Small: 8px
+   Radius Bubble: 16px
+   Transition: 0.18s ease
+   Shadow Soft: 0 4px 12px rgba(0,0,0,0.15)
+   Shadow Medium: 0 8px 20px rgba(0,0,0,0.2)
+   Shadow Accent: 0 4px 12px rgba(59,130,246,0.2)
+*/
 
 * {
   margin: 0;
@@ -59,8 +84,8 @@ body {
   display: flex;
   flex-direction: column;
   border-right: 1px solid #1f2937;
-  box-shadow: 8px 0 24px rgba(2, 6, 23, 0.12);
-  transition: transform 0.28s ease, box-shadow 0.28s ease, width 0.28s ease, min-width 0.28s ease, opacity 0.28s ease;
+  box-shadow: 4px 0 12px rgba(0, 0, 0, 0.15);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, width 0.18s ease, min-width 0.18s ease, opacity 0.18s ease;
   z-index: 20;
 }
 
@@ -73,6 +98,7 @@ body {
   box-shadow: none;
 }
 
+/* --- Typography: App Title --- */
 .logo {
   font-size: 28px;
   font-weight: 700;
@@ -83,17 +109,18 @@ body {
 
 .logo span {
   font-size: 30px;
-  color: #60a5fa;
+  color: #3b82f6;
 }
 
 .tagline {
   font-size: 12px;
   font-weight: 400;
-  color: #64748b;
+  color: #94a3b8;
   letter-spacing: 0.01em;
   margin-top: 4px;
 }
 
+/* --- Primary Button --- */
 .new-chat {
   display: inline-flex;
   align-items: center;
@@ -108,8 +135,8 @@ body {
   margin: 0 auto 16px;
   padding: 0 20px;
   border: none;
-  border-radius: 14px;
-  background: #2563eb;
+  border-radius: 12px;
+  background: #3b82f6;
   color: #fff;
   font-size: 15px;
   font-weight: 600;
@@ -117,20 +144,22 @@ body {
   white-space: nowrap;
   overflow: visible;
   cursor: pointer;
-  transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
-  box-shadow: 0 10px 22px rgba(37, 99, 235, 0.22);
+  transition: background 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
 }
 
 .new-chat:hover,
 .new-chat:focus-visible {
-  background: #1d4ed8;
+  background: #2563eb;
   transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.25);
 }
 
 .new-chat:active {
   transform: scale(0.98);
 }
 
+/* --- Typography: Section Header --- */
 .history-title {
   padding: 18px 24px 10px;
   color: #94a3b8;
@@ -154,12 +183,12 @@ body {
   color: #f8fafc;
   font-size: 13px;
   outline: none;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
   font-family: inherit;
 }
 
 .history-search::placeholder {
-  color: #64748b;
+  color: #94a3b8;
 }
 
 .history-search:focus {
@@ -182,19 +211,20 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s ease;
+  transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease;
   box-shadow: none;
   z-index: 5;
 }
 
 .sidebar-collapse-btn:hover {
   background: #273549;
-  color: #e2e8f0;
+  color: #cbd5e1;
   border-color: #475569;
 }
 
 .sidebar-collapse-btn.collapsed svg {
   transform: rotate(180deg);
+  transition: transform 0.18s ease;
 }
 
 .history {
@@ -208,15 +238,17 @@ body {
   margin-bottom: 6px;
 }
 
+/* --- Typography: Date Label --- */
 .date-label {
   padding: 8px 10px 4px;
-  color: #64748b;
+  color: #94a3b8;
   font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
 }
 
+/* --- Typography: Chat Title --- */
 .history-item {
   display: flex;
   align-items: center;
@@ -225,9 +257,10 @@ body {
   border-radius: 10px;
   margin-bottom: 2px;
   cursor: pointer;
-  transition: background 0.2s ease, transform 0.2s ease;
-  color: #e2e8f0;
+  transition: background 0.18s ease, transform 0.18s ease;
+  color: #cbd5e1;
   font-size: 13px;
+  font-weight: 500;
   line-height: 1.4;
   position: relative;
 }
@@ -239,9 +272,9 @@ body {
 }
 
 .history-item.active {
-  background: #1d4ed8;
+  background: #2563eb;
   color: #fff;
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
 }
 
 .history-item-title {
@@ -259,9 +292,10 @@ body {
   padding: 2px 6px;
   background: #0f172a;
   border: 1px solid #60a5fa;
-  border-radius: 6px;
+  border-radius: 8px;
   color: #f8fafc;
   font-size: 13px;
+  font-weight: 500;
   font-family: inherit;
   outline: none;
   box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.2);
@@ -272,7 +306,7 @@ body {
   align-items: center;
   gap: 2px;
   opacity: 0;
-  transition: opacity 0.2s ease;
+  transition: opacity 0.18s ease;
   flex-shrink: 0;
 }
 
@@ -291,16 +325,16 @@ body {
   padding: 0;
   background: transparent;
   border: 1px solid transparent;
-  border-radius: 6px;
+  border-radius: 8px;
   cursor: pointer;
-  color: #64748b;
-  transition: all 0.2s ease;
+  color: #94a3b8;
+  transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease;
   box-shadow: none;
 }
 
 .history-action-btn:hover {
   background: #334155;
-  color: #e2e8f0;
+  color: #cbd5e1;
   border-color: #475569;
 }
 
@@ -322,7 +356,7 @@ body {
   background: rgba(2, 6, 23, 0.5);
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.25s ease;
+  transition: opacity 0.18s ease;
   z-index: 15;
 }
 
@@ -356,13 +390,15 @@ header {
   position: sticky;
   top: 0;
   z-index: 10;
-  box-shadow: 0 6px 18px rgba(2, 6, 23, 0.12);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
+/* --- Typography: Header Title --- */
 header h1 {
-  font-size: 24px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: #f8fafc;
 }
 
 .mobile-menu-toggle {
@@ -373,12 +409,12 @@ header h1 {
   border: 1px solid #334155;
   border-radius: 12px;
   background: #1f2937;
-  color: #fff;
+  color: #f8fafc;
   font-size: 20px;
   cursor: pointer;
   align-items: center;
   justify-content: center;
-  transition: background 0.2s ease, transform 0.2s ease;
+  transition: background 0.18s ease, transform 0.18s ease;
 }
 
 .mobile-menu-toggle:hover,
@@ -424,10 +460,13 @@ header h1 {
   animation: fadeIn 0.5s ease;
 }
 
+/* --- Typography: Welcome Heading --- */
 .welcome h2 {
   font-size: 32px;
   margin-bottom: 10px;
   font-weight: 700;
+  color: #f8fafc;
+  letter-spacing: -0.02em;
 }
 
 .welcome p {
@@ -454,12 +493,12 @@ header h1 {
   padding: 18px 12px;
   background: #1e293b;
   border: 1px solid #334155;
-  border-radius: 14px;
+  border-radius: 12px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background 0.18s ease, border-color 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
   text-align: center;
   font-family: inherit;
-  color: #e2e8f0;
+  color: #cbd5e1;
   line-height: 1.4;
 }
 
@@ -467,7 +506,7 @@ header h1 {
   background: #273549;
   border-color: #475569;
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
 }
 
 .suggestion-card:active {
@@ -512,7 +551,7 @@ header h1 {
   height: 34px;
   min-width: 34px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #2563eb, #60a5fa);
+  background: linear-gradient(135deg, #3b82f6, #60a5fa);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -521,7 +560,7 @@ header h1 {
   color: #fff;
   margin-top: 2px;
   flex-shrink: 0;
-  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.25);
 }
 
 /* Message content bubble */
@@ -529,9 +568,10 @@ header h1 {
   max-width: min(72%, 780px);
   width: auto;
   padding: 12px 16px;
-  border-radius: 18px;
+  border-radius: 16px;
   line-height: 1.6;
   font-size: clamp(14px, 1.8vw, 16px);
+  font-weight: 400;
   word-break: break-word;
   overflow-wrap: anywhere;
   white-space: normal;
@@ -540,7 +580,7 @@ header h1 {
 
 /* User message bubble */
 .user-content {
-  background: #2563eb;
+  background: #3b82f6;
   color: #fff;
   border-bottom-right-radius: 6px;
 }
@@ -548,7 +588,7 @@ header h1 {
 /* AI message bubble */
 .ai-content {
   background: #1e293b;
-  color: #e2e8f0;
+  color: #cbd5e1;
   border-bottom-left-radius: 6px;
   border: 1px solid #334155;
 }
@@ -566,11 +606,11 @@ header h1 {
   background: transparent;
   color: #94a3b8;
   border: 1px solid transparent;
-  border-radius: 6px;
+  border-radius: 8px;
   font-size: 12px;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease;
   opacity: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   z-index: 5;
@@ -586,16 +626,16 @@ header h1 {
 
 .copy-response-btn:hover {
   background: #334155;
-  color: #e2e8f0;
+  color: #cbd5e1;
   border-color: #475569;
   transform: none;
   box-shadow: none;
 }
 
 .copy-response-btn.copied {
-  background: #1f6feb;
+  background: #2563eb;
   color: #fff;
-  border-color: #1f6feb;
+  border-color: #2563eb;
 }
 
 /* ================= TYPING INDICATOR ================= */
@@ -658,12 +698,14 @@ textarea {
   background: #1f2937;
   color: #f8fafc;
   padding: 14px 16px;
-  border-radius: 16px;
+  border-radius: 12px;
   font-size: 16px;
+  font-weight: 400;
   line-height: 1.45;
   min-height: 52px;
   max-height: 180px;
   overflow-y: auto;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
 }
 
 textarea::placeholder {
@@ -672,7 +714,7 @@ textarea::placeholder {
 
 textarea:focus {
   border-color: #60a5fa;
-  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.2);
+  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.15);
 }
 
 button[type="submit"] {
@@ -681,12 +723,12 @@ button[type="submit"] {
   min-width: 52px;
   border: none;
   border-radius: 50%;
-  background: #2563eb;
-  color: white;
+  background: #3b82f6;
+  color: #fff;
   cursor: pointer;
   font-size: 20px;
-  transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
-  box-shadow: 0 10px 22px rgba(37, 99, 235, 0.2);
+  transition: background 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
   touch-action: manipulation;
   display: flex;
   align-items: center;
@@ -695,8 +737,9 @@ button[type="submit"] {
 
 button[type="submit"]:hover,
 button[type="submit"]:focus-visible {
-  background: #1d4ed8;
+  background: #2563eb;
   transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.25);
 }
 
 button[type="submit"]:active {
@@ -763,7 +806,7 @@ button[type="submit"]:disabled {
   padding-top: 6px;
   border-top: 1px solid rgba(255, 255, 255, 0.06);
   opacity: 0;
-  transition: opacity 0.2s ease;
+  transition: opacity 0.18s ease;
 }
 
 .ai-content:hover .ai-actions {
@@ -780,11 +823,11 @@ button[type="submit"]:disabled {
   background: transparent;
   color: #94a3b8;
   border: 1px solid transparent;
-  border-radius: 6px;
+  border-radius: 8px;
   font-size: 12px;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   width: auto;
   height: auto;
@@ -795,7 +838,7 @@ button[type="submit"]:disabled {
 
 .regenerate-btn:hover {
   background: #334155;
-  color: #e2e8f0;
+  color: #cbd5e1;
   border-color: #475569;
   transform: none;
   box-shadow: none;
@@ -845,11 +888,11 @@ button[type="submit"]:disabled {
   height: 28px;
   padding: 0;
   background: transparent;
-  color: #64748b;
+  color: #94a3b8;
   border: 1px solid transparent;
-  border-radius: 6px;
+  border-radius: 8px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   box-shadow: none;
   min-width: auto;
@@ -857,7 +900,7 @@ button[type="submit"]:disabled {
 
 .feedback-btn:hover {
   background: #334155;
-  color: #94a3b8;
+  color: #cbd5e1;
   border-color: #475569;
   transform: none;
   box-shadow: none;
@@ -877,6 +920,6 @@ button[type="submit"]:disabled {
 /* ================= SELECTION ================= */
 
 ::selection {
-  background: rgba(96, 165, 250, 0.3);
+  background: rgba(59, 130, 246, 0.3);
   color: #fff;
 }
