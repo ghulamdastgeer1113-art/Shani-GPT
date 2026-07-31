@@ -889,7 +889,33 @@ function attachChatItemListeners() {
   });
 }
 
+function showChatSkeleton() {
+  chatBox.innerHTML = `
+    <div class="skeleton-message">
+      <div class="skeleton-avatar"></div>
+      <div class="skeleton-bubble">
+        <div class="skeleton-line" style="width: 80%;"></div>
+        <div class="skeleton-line" style="width: 60%;"></div>
+      </div>
+    </div>
+    <div class="skeleton-message" style="justify-content: flex-end; padding-left: 60px;">
+      <div class="skeleton-bubble" style="max-width: 50%; background: #1e293b;">
+        <div class="skeleton-line" style="width: 70%;"></div>
+      </div>
+    </div>
+    <div class="skeleton-message">
+      <div class="skeleton-avatar"></div>
+      <div class="skeleton-bubble">
+        <div class="skeleton-line" style="width: 90%;"></div>
+        <div class="skeleton-line" style="width: 75%;"></div>
+        <div class="skeleton-line" style="width: 50%;"></div>
+      </div>
+    </div>
+  `;
+}
+
 function loadChat(chatId) {
+  showChatSkeleton();
   fetch(`/load_chat/${chatId}`)
     .then((res) => res.json())
     .then((data) => {
