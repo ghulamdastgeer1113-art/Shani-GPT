@@ -318,11 +318,14 @@ function addActionButtons(aiMsgDiv, userMessageText) {
   addFeedbackButtons(aiContent);
 }
 
-// ─── Auto-resize Textarea ─────────────────────────────────────────────────
+// ─── Auto-resize Textarea + Send Button State ─────────────────────────────
 
 input.addEventListener("input", () => {
   input.style.height = "auto";
   input.style.height = Math.min(input.scrollHeight, 180) + "px";
+  // Enable/disable send button based on input content
+  const hasText = input.value.trim().length > 0;
+  sendButton.disabled = hasText ? false : true;
 });
 
 // ─── Enter to Send, Shift+Enter for New Line ──────────────────────────────
@@ -492,6 +495,7 @@ function attachSuggestionCardListeners() {
         input.value = prompt;
         input.style.height = "auto";
         input.style.height = Math.min(input.scrollHeight, 180) + "px";
+        sendButton.disabled = false;
         input.focus();
       }
     });

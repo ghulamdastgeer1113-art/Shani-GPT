@@ -747,10 +747,21 @@ button[type="submit"]:active {
 }
 
 button[type="submit"]:disabled {
-  opacity: 0.5;
+  opacity: 0.4;
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
+  background: #334155;
+}
+
+/* Input hint text */
+.input-hint {
+  padding: 0 20px 8px;
+  text-align: center;
+  font-size: 11px;
+  color: #64748b;
+  font-weight: 400;
+  letter-spacing: 0.01em;
 }
 
 /* ================= ANIMATIONS ================= */
